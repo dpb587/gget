@@ -94,6 +94,12 @@ $ ghet asset cloudfoundry/bosh-cli --version-match=^6.1 --install /usr/local/bin
 $ ghet blob kubernetes/kubernetes go.mod
 ```
 
+## Use Cases
+
+ * Avoiding manual, hard-coded download commands in Dockerfiles.
+ * Supporting configurable version-matching in tasks and actions.
+ * Lightweight workstation tool for automating arbitrary release downloads.
+
 ## Alternatives
 
  * `wget`/`shasum`/`chmod` -- requires manually building commands
@@ -113,14 +119,20 @@ Publishing checksums are not officially supported by GitHub. The following metho
 
 Should `--chmod` actually be supported?
 
- * – not very good for generic cases when downloading multiple files of different types
- * + helpful for binary installation
- * ~ perhaps it could support using it multiple times to apply to files after it
+ * (–) not very good for generic cases when downloading multiple files of different types
+ * (+) helpful for binary installation
+ * (~) perhaps it could support using it multiple times to apply to files after it
 
 Support for GitHub Actions?
 
- * + helpful for a couple cases already
- * ~ not sure what syntax should look like (i.e. args vs inputs vs dynamic file lists vs ghet-installer)
+ * (+) helpful for a couple cases already
+ * (~) not sure what syntax should look like (i.e. args vs inputs vs dynamic file lists vs ghet-installer)
+
+Is there potential for a "installation profile" concept to simplify user commands? For example, `ghet cloudfoundry/bosh-cli --profile=latest` whose configuration includes `--version-match`, `--install`, and platform-specific file mappings.
+
+ * (+) avoids duplicated configuration and commands
+ * (-) kind of duplicates `brew install` (but helps for private repositories)
+ * (~) how well can `brew` work for private repositories?
 
 ## License
 
