@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/dpb587/ghet/pkg/checksums"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
@@ -43,11 +44,25 @@ func main() {
 		panic(errors.Wrap(err, "getting release"))
 	}
 
+	parsedReleases := checksums.ParseReleaseNotes(release.GetBody())
+
 	for _, asset := range release.Assets {
-		fmt.Printf("%+v\n", asset.GetBrowserDownloadURL())
+		checksum, found := parsedReleases.GetByName(asset.GetName())
+		if !found {
+			panic(errors.Wrapf(fmt.Errorf("no checksum found"), "downloading %s", asset.GetName()))
+		}
+
+		fmt.Printf("%s  %s\n", checksum.SHA, asset.GetName())
+
+		verifierHash := checksum.NewHash()
+
 		remoteHandle, redirectURL, err := client.Repositories.DownloadReleaseAsset(ctx, repo.GetOwner().GetLogin(), repo.GetName(), asset.GetID())
 		if err != nil {
 			panic(errors.Wrapf(err, "getting asset %f", asset.GetName()))
+		}
+
+		if remoteHandle != nil {
+			defer remoteHandle.Close()
 		}
 
 		if redirectURL != "" {
@@ -68,9 +83,19 @@ func main() {
 			panic(errors.Wrapf(err, "creating %s", asset.GetName()))
 		}
 
-		_, err = io.Copy(localHandle, remoteHandle)
+		defer localHandle.Close()
+
+		tee := io.MultiWriter(localHandle, verifierHash)
+
+		_, err = io.Copy(tee, remoteHandle)
 		if err != nil {
 			panic(errors.Wrapf(err, "downloading %s", asset.GetName()))
+		}
+
+		actualSHA := fmt.Sprintf("%x", verifierHash.Sum(nil))
+
+		if actualSHA != checksum.SHA {
+			panic(fmt.Errorf("expected checksum %s: got %s", checksum.SHA, actualSHA))
 		}
 	}
 }
