@@ -17,6 +17,7 @@ import (
 	"github.com/dpb587/ghet/pkg/checksums"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
+	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -33,8 +34,18 @@ func main() {
 		includeGlobs = os.Args[2:]
 	}
 
+	var tc *http.Client
 	ctx := context.Background()
-	client := github.NewClient(nil)
+
+	if v := os.Getenv("GITHUB_TOKEN"); v != "" {
+		tc = oauth2.NewClient(ctx,
+			oauth2.StaticTokenSource(
+				&oauth2.Token{AccessToken: v},
+			),
+		)
+	}
+
+	client := github.NewClient(tc)
 
 	repo, _, err := client.Repositories.Get(ctx, ownerRepo[0], ownerRepo[1])
 	if err != nil {
