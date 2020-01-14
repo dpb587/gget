@@ -1,5 +1,11 @@
 package main
 
+// version-matching
+// v# -> v#.latest
+// v#.#.# -> assume exact match
+// "~2.1, !~2.3.1"
+//
+
 // go run . {repository} {version}
 // find the repo with the GitHub API
 // find the release based on version with the GitHub API
@@ -16,6 +22,7 @@ import (
 
 	"github.com/dpb587/ghet/pkg/checksums"
 	"github.com/google/go-github/v29/github"
+	"github.com/masterminds/semver"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 )
@@ -55,7 +62,56 @@ func main() {
 	var release *github.RepositoryRelease
 
 	if version != "latest" {
-		release, _, err = client.Repositories.GetReleaseByTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), version)
+		if strings.HasPrefix(version, "v") {
+			// dynamic matching
+
+			constraint, err := semver.NewConstraint(strings.TrimPrefix(version, "v"))
+			if err != nil {
+				panic(errors.Wrap(err, "parsing version constraint"))
+			}
+
+			opts := &github.ListOptions{}
+
+			for {
+				releases, res, err := client.Repositories.ListReleases(ctx, repo.GetOwner().GetLogin(), repo.GetName(), opts)
+				if err != nil {
+					panic(errors.Wrap(err, "listing releases"))
+				}
+
+				for _, candidateRelease := range releases {
+					releaseVersion, err := semver.NewVersion(strings.TrimPrefix(candidateRelease.GetTagName(), "v"))
+					if err != nil {
+						// TODO log debug?
+						continue
+					}
+
+					if constraint.Check(releaseVersion) {
+						release = candidateRelease
+
+						break
+					}
+				}
+
+				if release != nil {
+					break
+				}
+
+				opts.Page = res.NextPage
+
+				if opts.Page == 0 {
+					break
+				} else if opts.Page > 5 {
+					// just to be safe
+					break // TODO customizable limit?
+				}
+			}
+
+			if release == nil {
+				panic(fmt.Errorf("expected to find release version matching %s: no release found", version))
+			}
+		} else {
+			release, _, err = client.Repositories.GetReleaseByTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), version)
+		}
 	} else {
 		release, _, err = client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
 	}
