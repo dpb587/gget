@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/dpb587/ghet/pkg/checksums"
@@ -19,10 +20,17 @@ import (
 )
 
 func main() {
-	ownerRepo := strings.Split(os.Args[1], "/")
+	slugVersion := strings.Split(os.Args[1], "@")
+	ownerRepo := strings.Split(slugVersion[0], "/")
+
 	version := "latest"
+	if len(slugVersion) > 1 {
+		version = slugVersion[1]
+	}
+
+	includeGlobs := []string{"*"}
 	if len(os.Args) > 2 {
-		version = os.Args[2]
+		includeGlobs = os.Args[2:]
 	}
 
 	ctx := context.Background()
@@ -47,6 +55,20 @@ func main() {
 	parsedReleases := checksums.ParseReleaseNotes(release.GetBody())
 
 	for _, asset := range release.Assets {
+		var matched bool
+
+		for _, includeGlob := range includeGlobs {
+			if v, _ := filepath.Match(includeGlob, asset.GetName()); v {
+				matched = true
+
+				break
+			}
+		}
+
+		if !matched {
+			continue
+		}
+
 		checksum, found := parsedReleases.GetByName(asset.GetName())
 		if !found {
 			panic(errors.Wrapf(fmt.Errorf("no checksum found"), "downloading %s", asset.GetName()))
