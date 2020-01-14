@@ -6,16 +6,24 @@ import (
 	"strings"
 )
 
-var codeblock = regexp.MustCompile("(?m)(```[\\w\\d]*\\s*)(([a-f0-9]{40,64})\\s*([^\\s]+)\\s*)+(```)")
+var codefence = regexp.MustCompile("(?m)(```[\\w\\d]*\\s*)(([a-f0-9]{40,64})\\s+([^\\s]+)\\s*)+(```)")
+var codeindent = regexp.MustCompile("    ([a-f0-9]{40,64})\\s+([^\\s]+)")
 
-// var codeblock = regexp.MustCompile("(?m)```")
+// var codefence = regexp.MustCompile("(?m)```")
 
 func ParseReleaseNotes(releaseNotes string) ReleaseAssets {
-	releaseNotesSubmatch := codeblock.FindAllStringSubmatch(releaseNotes, -1)
+	res := parseReleaseNotesCodefence(releaseNotes)
+	if len(res) > 0 {
+		return res
+	}
+
+	return parseReleaseNotesCodeindent(releaseNotes)
+}
+
+func parseReleaseNotesCodefence(releaseNotes string) ReleaseAssets {
+	releaseNotesSubmatch := codefence.FindAllStringSubmatch(releaseNotes, -1)
 
 	if len(releaseNotesSubmatch) == 0 {
-		fmt.Printf("---\n%s\n---", releaseNotes)
-
 		return nil
 	}
 
@@ -40,6 +48,26 @@ func ParseReleaseNotes(releaseNotes string) ReleaseAssets {
 		releaseSHAs = append(releaseSHAs, ReleaseAsset{
 			SHA:  checksumSplit[0],
 			Name: checksumSplit[1],
+		})
+	}
+
+	return releaseSHAs
+}
+
+func parseReleaseNotesCodeindent(releaseNotes string) ReleaseAssets {
+	releaseNotesSubmatch := codeindent.FindAllStringSubmatch(releaseNotes, -1)
+
+	if len(releaseNotesSubmatch) == 0 {
+		fmt.Printf("%s\n", releaseNotes)
+		return nil
+	}
+
+	var releaseSHAs ReleaseAssets
+
+	for _, match := range releaseNotesSubmatch {
+		releaseSHAs = append(releaseSHAs, ReleaseAsset{
+			SHA:  match[1],
+			Name: match[2],
 		})
 	}
 
