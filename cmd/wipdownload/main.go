@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dpb587/ghet/pkg/checksums"
+	"github.com/dpb587/ghet/pkg/checksum"
 	"github.com/google/go-github/v29/github"
 	"github.com/masterminds/semver"
 	"github.com/pkg/errors"
@@ -119,7 +119,7 @@ func main() {
 		panic(errors.Wrap(err, "getting release"))
 	}
 
-	parsedReleases := checksums.ParseReleaseNotes(release.GetBody())
+	parsedReleases := checksum.ParseReleaseNotes(release.GetBody())
 
 	for _, asset := range release.Assets {
 		var matched bool
