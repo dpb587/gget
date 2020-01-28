@@ -20,17 +20,18 @@ type AssetCmd struct {
 
 	CD string `long:"cd" description:"change to directory before downloading"`
 
-	IgnoreMissing []AssetNameOpt `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing"`
-	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)"`
+	IgnoreMissing []AssetNameOpt `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing" value-name:"[ASSET]" optional:"true" optional-value:"*"`
+	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)" value-name:"ASSET"`
+	Executable    []AssetNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[ASSET]" optional:"true" optional-value:"*"`
 
 	List bool `long:"list" description:"list matched assets instead of downloading"`
 
-	Args AssetArgs `positional-args:"true"`
+	Args AssetArgs `positional-args:"true" required:"true"`
 }
 
 type AssetArgs struct {
-	Origin OriginOpt      `positional-arg-name:"OWNER/REPOSITORY[@TAG]" description:"release reference"`
-	Assets []AssetPathOpt `positional-arg-name:"[LOCAL-PATH=]ASSET-NAME" description:"asset name to download (glob-friendly)"`
+	Origin OriginOpt      `positional-arg-name:"OWNER/REPOSITORY[@REF]" description:"release reference"`
+	Assets []AssetPathOpt `positional-arg-name:"[LOCAL-PATH=]ASSET" description:"asset name(s) to download (glob-friendly)" optional:"true"`
 }
 
 func (c *AssetCmd) applySettings() {
@@ -144,6 +145,14 @@ func (c *AssetCmd) Execute(_ []string) error {
 			Expected: cs.Bytes,
 			Actual:   cs.Hasher(),
 		})
+
+		for _, assetNameOpt := range c.Executable {
+			if !assetNameOpt.Match(asset.GetName()) {
+				continue
+			}
+
+			d.AddInstaller(&downloader.DownloadExecutableInstaller{})
+		}
 
 		d.AddInstaller(&downloader.DownloadPathInstaller{
 			Target: localPath,

@@ -368,3 +368,18 @@ func (dpi DownloadPathInstaller) Install(_ context.Context, tmpfile string) (str
 
 	return "", nil
 }
+
+type DownloadExecutableInstaller struct{}
+
+func (dpi DownloadExecutableInstaller) GetName() string {
+	return "marking"
+}
+
+func (dpi DownloadExecutableInstaller) Install(_ context.Context, tmpfile string) (string, error) {
+	err := os.Chmod(tmpfile, 0755)
+	if err != nil {
+		return "", errors.Wrap(err, "chmod'ing")
+	}
+
+	return "", nil
+}

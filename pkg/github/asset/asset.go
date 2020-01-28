@@ -34,6 +34,10 @@ func (a *Asset) GetSize() int {
 	return a.asset.GetSize()
 }
 
+func (a *Asset) GetLocation(ctx context.Context) (string, error) {
+	return a.asset.GetBrowserDownloadURL(), nil
+}
+
 func (a *Asset) Open(ctx context.Context) (io.ReadCloser, error) {
 	remoteHandle, redirectURL, err := a.client.Repositories.DownloadReleaseAsset(ctx, a.releaseOwner, a.releaseRepository, a.asset.GetID())
 	if err != nil {
