@@ -13,10 +13,13 @@ import (
 	gogithub "github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 	"github.com/vbauerster/mpb/v4"
+	"github.com/tidwall/limiter"
 )
 
 type AssetCmd struct {
 	*Global `no-flag:"true"`
+
+	Parallel int `long:"parallel" description:"maximum number of parallel operations" default:"4"`
 
 	CD string `long:"cd" description:"change to directory before downloading"`
 
@@ -186,11 +189,20 @@ func (c *AssetCmd) Execute(_ []string) error {
 		d.Prepare(pb)
 	}
 
+	l := limiter.New(c.Parallel)
+
 	for _, d := range downloads {
-		err := d.Execute(ctx)
-		if err != nil {
-			return errors.Wrapf(err, "downloading %s", d.GetSubject())
-		}
+		d := d
+		go func() {
+			l.Begin()
+			defer l.End()
+
+			err := d.Execute(ctx)
+			if err != nil {
+				// TODO concurrency
+				panic(errors.Wrapf(err, "downloading %s", d.GetSubject()))
+			}
+		}()
 	}
 
 	pb.Wait()

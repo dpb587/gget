@@ -22,3 +22,9 @@ type Step interface {
 type StepWriter interface {
 	GetWriter() (io.Writer, error)
 }
+
+type DownloadAsset interface {
+	GetName() string
+	GetSize() int64
+	Open(ctx context.Context) (io.ReadCloser, error)
+}
