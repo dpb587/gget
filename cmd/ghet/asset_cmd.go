@@ -128,51 +128,68 @@ func (c *AssetCmd) Execute(_ []string) error {
 		return nil
 	}
 
-	pb := mpb.New(mpb.WithWidth(1))
-
-	var downloads []*downloader.Download
+	var downloads []*downloader.Workflow
 
 	for localPath, asset := range assetMap {
-		d := downloader.NewDownload(githubasset.NewAsset(client, c.Args.Origin.Owner, c.Args.Origin.Repository, asset))
+		var steps []downloader.Step
+
+		steps = append(
+			steps,
+			&downloader.DownloadTmpfileInstaller{},
+		)
 
 		cs, err := checksums.GetAssetChecksum(asset.GetName())
 		if err != nil {
 			return errors.Wrap(err, "getting asset checksum")
 		}
 
-		d.AddVerifier(&downloader.DownloadHashVerifier{
-			Algo:     cs.Type,
-			Expected: cs.Bytes,
-			Actual:   cs.Hasher(),
-		})
+		steps = append(
+			steps,
+			&downloader.DownloadHashVerifier{
+				Algo:     cs.Type,
+				Expected: cs.Bytes,
+				Actual:   cs.Hasher(),
+			},
+		)
 
 		for _, assetNameOpt := range c.Executable {
 			if !assetNameOpt.Match(asset.GetName()) {
 				continue
 			}
 
-			d.AddInstaller(&downloader.DownloadExecutableInstaller{})
+			steps = append(
+				steps,
+				&downloader.DownloadExecutableInstaller{},
+			)
 		}
 
-		d.AddInstaller(&downloader.DownloadPathInstaller{
-			Target: localPath,
-		})
+		steps = append(
+			steps,
+			&downloader.DownloadRenameInstaller{
+				Target: localPath,
+			},
+		)
 
-		downloads = append(downloads, d)
+		downloads = append(
+			downloads,
+			downloader.NewWorkflow(githubasset.NewAsset(client, c.Args.Origin.Owner, c.Args.Origin.Repository, asset), steps...),
+		)
 	}
 
 	sort.Slice(downloads, func(i, j int) bool {
-		return downloads[i].GetName() < downloads[j].GetName()
+		return downloads[i].GetSubject() < downloads[j].GetSubject()
 	})
 
+	pb := mpb.New(mpb.WithWidth(1))
+
 	for _, d := range downloads {
-		d.SetProgressBar(pb)
+		d.Prepare(pb)
 	}
 
 	for _, d := range downloads {
-		err := d.Download(ctx)
+		err := d.Execute(ctx)
 		if err != nil {
-			return errors.Wrapf(err, "downloading %s", d.GetName())
+			return errors.Wrapf(err, "downloading %s", d.GetSubject())
 		}
 	}
 

@@ -30,8 +30,8 @@ func (a *Asset) GetName() string {
 	return a.asset.GetName()
 }
 
-func (a *Asset) GetSize() int {
-	return a.asset.GetSize()
+func (a *Asset) GetSize() int64 {
+	return int64(a.asset.GetSize())
 }
 
 func (a *Asset) GetLocation(ctx context.Context) (string, error) {
