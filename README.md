@@ -45,6 +45,7 @@ Asset Options
   ASSET  NAME            glob-friendly asset name to download
   ASSET  LOCALPATH=NAME  use a specific local path for an asset download
 
+  --exclude=NAME           ignore assets with this name (glob-friendly)
   --ignore-missing[=GLOB]  if an asset is not found, skip it rather than failing
 
 Download Options

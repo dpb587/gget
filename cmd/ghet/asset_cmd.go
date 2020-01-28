@@ -2,6 +2,7 @@ package ghet
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sort"
 
@@ -17,15 +18,19 @@ import (
 type AssetCmd struct {
 	*Global `no-flag:"true"`
 
-	CD            string   `long:"cd" description:"change to directory before downloading"`
-	IgnoreMissing []string `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing"`
+	CD string `long:"cd" description:"change to directory before downloading"`
+
+	IgnoreMissing []AssetNameOpt `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing"`
+	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)"`
+
+	List bool `long:"list" description:"list matched assets instead of downloading"`
 
 	Args AssetArgs `positional-args:"true"`
 }
 
 type AssetArgs struct {
-	Origin OriginOpt  `positional-arg-name:"OWNER/REPOSITORY[@TAG]" description:"release reference"`
-	Assets []AssetOpt `positional-arg-name:"[LOCAL-PATH=]ASSET-NAME" description:"glob-friendly asset name to download"`
+	Origin OriginOpt      `positional-arg-name:"OWNER/REPOSITORY[@TAG]" description:"release reference"`
+	Assets []AssetPathOpt `positional-arg-name:"[LOCAL-PATH=]ASSET-NAME" description:"asset name to download (glob-friendly)"`
 }
 
 func (c *AssetCmd) applySettings() {
@@ -34,9 +39,9 @@ func (c *AssetCmd) applySettings() {
 	}
 
 	if len(c.Args.Assets) == 0 {
-		c.Args.Assets = []AssetOpt{
+		c.Args.Assets = []AssetPathOpt{
 			{
-				RemoteMatch: "*",
+				RemoteMatch: AssetNameOpt("*"),
 			},
 		}
 	}
@@ -62,23 +67,64 @@ func (c *AssetCmd) Execute(_ []string) error {
 	checksums := githubasset.NewChecksumManager(release)
 
 	assetMap := map[string]gogithub.ReleaseAsset{}
+	assetMatches := make([]bool, len(c.Args.Assets))
 
 	for _, asset := range release.Assets {
-		var matched bool
-		var resolved AssetOpt
+		{ // first check if its excluded
+			var excluded bool
 
-		for _, assetOpt := range c.Args.Assets {
-			resolved, matched = assetOpt.Resolve(asset.GetName())
-			if matched {
-				break
+			for _, assetNameOpt := range c.Exclude {
+				if assetNameOpt.Match(asset.GetName()) {
+					excluded = true
+
+					break
+				}
+			}
+
+			if excluded {
+				continue
 			}
 		}
 
-		if !matched {
-			continue
+		var resolved AssetPathOpt
+
+		{ // now check if its a match
+			var matched bool
+			for assetPathOptIdx, assetPathOpt := range c.Args.Assets {
+				resolved, matched = assetPathOpt.Resolve(asset.GetName())
+				if !matched {
+					continue
+				}
+
+				assetMatches[assetPathOptIdx] = true
+
+				break
+			}
+
+			if !matched {
+				continue
+			}
 		}
 
 		assetMap[resolved.LocalPath] = asset
+	}
+
+	{ // did we find everything the user asked for?
+		for assetIdx, assetMatched := range assetMatches {
+			if assetMatched {
+				continue
+			}
+
+			return errors.Wrap(fmt.Errorf("no asset matched: %s", c.Args.Assets[assetIdx].RemoteMatch), "expected matching assets")
+		}
+	}
+
+	if c.List {
+		for _, asset := range assetMap {
+			fmt.Println(asset.GetName())
+		}
+
+		return nil
 	}
 
 	pb := mpb.New(mpb.WithWidth(1))
