@@ -1,7 +1,6 @@
 package checksum
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -58,7 +57,7 @@ func parseReleaseNotesCodeindent(releaseNotes string) model.ChecksumMap {
 	releaseNotesSubmatch := codeindent.FindAllStringSubmatch(releaseNotes, -1)
 
 	if len(releaseNotesSubmatch) == 0 {
-		fmt.Printf("%s\n", releaseNotes)
+		// fmt.Printf("%s\n", releaseNotes)
 		return nil
 	}
 

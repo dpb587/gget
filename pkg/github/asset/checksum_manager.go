@@ -1,8 +1,6 @@
 package asset
 
 import (
-	"fmt"
-
 	"github.com/dpb587/ghet/pkg/checksum"
 	"github.com/dpb587/ghet/pkg/model"
 	"github.com/google/go-github/v29/github"
@@ -19,18 +17,18 @@ func NewChecksumManager(release *github.RepositoryRelease) *ChecksumManager {
 	}
 }
 
-func (cm *ChecksumManager) GetAssetChecksum(asset string) (model.Checksum, error) {
+func (cm *ChecksumManager) GetAssetChecksum(asset string) (model.Checksum, bool, error) {
 	err := cm.requireKnownChecksums()
 	if err != nil {
-		return model.Checksum{}, err
+		return model.Checksum{}, false, err
 	}
 
 	cs, found := cm.known[asset]
 	if !found {
-		return model.Checksum{}, fmt.Errorf("expected checksum: no checksum found")
+		return model.Checksum{}, false, nil
 	}
 
-	return cs, nil
+	return cs, true, nil
 }
 
 func (cm *ChecksumManager) requireKnownChecksums() error {

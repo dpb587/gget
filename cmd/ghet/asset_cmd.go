@@ -3,6 +3,9 @@ package ghet
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"sort"
 
@@ -12,8 +15,8 @@ import (
 	"github.com/dpb587/ghet/pkg/model"
 	gogithub "github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
-	"github.com/vbauerster/mpb/v4"
 	"github.com/tidwall/limiter"
+	"github.com/vbauerster/mpb/v4"
 )
 
 type AssetCmd struct {
@@ -27,7 +30,8 @@ type AssetCmd struct {
 	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)" value-name:"ASSET"`
 	Executable    []AssetNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[ASSET]" optional:"true" optional-value:"*"`
 
-	List bool `long:"list" description:"list matched assets instead of downloading"`
+	List   bool `long:"list" description:"list matched assets instead of downloading"`
+	Stdout bool `long:"stdout" description:"write file contents to standard out rather than disk by default"`
 
 	Args AssetArgs `positional-args:"true" required:"true"`
 }
@@ -50,8 +54,22 @@ func (c *AssetCmd) applySettings() {
 		}
 	}
 
+	if c.Stdout {
+		for assetIdx, asset := range c.Args.Assets {
+			if asset.LocalPath != "" {
+				continue
+			}
+
+			c.Args.Assets[assetIdx].LocalPath = "-"
+		}
+	}
+
 	if c.CD != "" {
 		for assetIdx, asset := range c.Args.Assets {
+			if asset.LocalPath == "-" {
+				continue
+			}
+
 			c.Args.Assets[assetIdx].LocalPath = filepath.Join(c.CD, asset.LocalPath)
 		}
 	}
@@ -74,7 +92,7 @@ func (c *AssetCmd) Execute(_ []string) error {
 	assetMatches := make([]bool, len(c.Args.Assets))
 
 	for _, asset := range release.Assets {
-		{ // first check if its excluded
+		{ // first check if it is excluded
 			var excluded bool
 
 			for _, assetNameOpt := range c.Exclude {
@@ -110,10 +128,14 @@ func (c *AssetCmd) Execute(_ []string) error {
 			}
 		}
 
+		if _, found := assetMap[resolved.LocalPath]; found {
+			return fmt.Errorf("target file already specified: %s", resolved.LocalPath)
+		}
+
 		assetMap[resolved.LocalPath] = asset
 	}
 
-	{ // did we find everything the user asked for?
+	{ // finally, did we find everything the user asked for?
 		for assetIdx, assetMatched := range assetMatches {
 			if assetMatched {
 				continue
@@ -136,42 +158,55 @@ func (c *AssetCmd) Execute(_ []string) error {
 	for localPath, asset := range assetMap {
 		var steps []downloader.Step
 
-		steps = append(
-			steps,
-			&downloader.DownloadTmpfileInstaller{},
-		)
+		if localPath == "-" {
+			steps = append(
+				steps,
+				&downloader.DownloadWriterInstaller{
+					Writer: os.Stdout,
+				},
+			)
+		} else {
+			steps = append(
+				steps,
+				&downloader.DownloadTmpfileInstaller{},
+			)
+		}
 
-		cs, err := checksums.GetAssetChecksum(asset.GetName())
+		cs, csFound, err := checksums.GetAssetChecksum(asset.GetName())
 		if err != nil {
 			return errors.Wrap(err, "getting asset checksum")
 		}
 
-		steps = append(
-			steps,
-			&downloader.DownloadHashVerifier{
-				Algo:     cs.Type,
-				Expected: cs.Bytes,
-				Actual:   cs.Hasher(),
-			},
-		)
+		if csFound {
+			steps = append(
+				steps,
+				&downloader.DownloadHashVerifier{
+					Algo:     cs.Type,
+					Expected: cs.Bytes,
+					Actual:   cs.Hasher(),
+				},
+			)
+		}
 
-		for _, assetNameOpt := range c.Executable {
-			if !assetNameOpt.Match(asset.GetName()) {
-				continue
+		if localPath != "-" {
+			for _, assetNameOpt := range c.Executable {
+				if !assetNameOpt.Match(asset.GetName()) {
+					continue
+				}
+
+				steps = append(
+					steps,
+					&downloader.DownloadExecutableInstaller{},
+				)
 			}
 
 			steps = append(
 				steps,
-				&downloader.DownloadExecutableInstaller{},
+				&downloader.DownloadRenameInstaller{
+					Target: localPath,
+				},
 			)
 		}
-
-		steps = append(
-			steps,
-			&downloader.DownloadRenameInstaller{
-				Target: localPath,
-			},
-		)
 
 		downloads = append(
 			downloads,
@@ -183,7 +218,13 @@ func (c *AssetCmd) Execute(_ []string) error {
 		return downloads[i].GetSubject() < downloads[j].GetSubject()
 	})
 
-	pb := mpb.New(mpb.WithWidth(1))
+	var pbO io.Writer = os.Stderr
+
+	if c.Global.Quiet {
+		pbO = ioutil.Discard
+	}
+
+	pb := mpb.New(mpb.WithWidth(1), mpb.WithOutput(pbO))
 
 	for _, d := range downloads {
 		d.Prepare(pb)
