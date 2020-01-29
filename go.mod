@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/Masterminds/semver v1.5.0
+	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v29 v29.0.2
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/masterminds/semver v1.5.0

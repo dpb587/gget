@@ -6,24 +6,36 @@ import (
 	"strings"
 
 	"github.com/Masterminds/semver"
-	"github.com/dpb587/ghet/pkg/model"
+	"github.com/dpb587/ghet/pkg/service"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
 
-func ResolveRelease(ctx context.Context, client *github.Client, origin model.Origin) (*github.RepositoryRelease, error) {
-	repo, _, err := client.Repositories.Get(ctx, origin.Owner, origin.Repository)
+type Service struct {
+	client *github.Client
+}
+
+func NewService(client *github.Client) *Service {
+	return &Service{
+		client: client,
+	}
+}
+
+var _ service.RefResolver = &Service{}
+
+func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.ResolvedRef, error) {
+	repo, _, err := s.client.Repositories.Get(ctx, ref.Owner, ref.Repository)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting repo")
 	}
 
 	var release *github.RepositoryRelease
 
-	if origin.Ref != "" {
-		if strings.HasPrefix(origin.Ref, "v") {
+	if ref.Ref != "" {
+		if strings.HasPrefix(ref.Ref, "v") {
 			// dynamic matching
 
-			constraint, err := semver.NewConstraint(strings.TrimPrefix(origin.Ref, "v"))
+			constraint, err := semver.NewConstraint(strings.TrimPrefix(ref.Ref, "v"))
 			if err != nil {
 				return nil, errors.Wrap(err, "parsing version constraint")
 			}
@@ -31,7 +43,7 @@ func ResolveRelease(ctx context.Context, client *github.Client, origin model.Ori
 			opts := &github.ListOptions{}
 
 			for {
-				releases, res, err := client.Repositories.ListReleases(ctx, repo.GetOwner().GetLogin(), repo.GetName(), opts)
+				releases, res, err := s.client.Repositories.ListReleases(ctx, repo.GetOwner().GetLogin(), repo.GetName(), opts)
 				if err != nil {
 					return nil, errors.Wrap(err, "listing releases")
 				}
@@ -65,17 +77,21 @@ func ResolveRelease(ctx context.Context, client *github.Client, origin model.Ori
 			}
 
 			if release == nil {
-				return nil, fmt.Errorf("expected to find release version matching %s: no release found", origin.Ref)
+				return nil, fmt.Errorf("expected to find release version matching %s: no release found", ref.Ref)
 			}
 		} else {
-			release, _, err = client.Repositories.GetReleaseByTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), origin.Ref)
+			release, _, err = s.client.Repositories.GetReleaseByTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), ref.Ref)
 		}
 	} else {
-		release, _, err = client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+		release, _, err = s.client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "getting release")
 	}
 
-	return release, nil
+	return &Release{
+		client:  s.client,
+		repo:    repo,
+		release: release,
+	}, nil
 }

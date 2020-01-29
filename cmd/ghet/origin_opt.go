@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dpb587/ghet/pkg/model"
+	"github.com/dpb587/ghet/pkg/service"
 )
 
-type OriginOpt model.Origin
+type RefOpt service.Ref
 
-func (o *OriginOpt) UnmarshalFlag(data string) error {
+func (o *RefOpt) UnmarshalFlag(data string) error {
 	slugVersion := strings.SplitN(data, "@", 2)
 	ownerRepo := strings.SplitN(slugVersion[0], "/", 3)
 

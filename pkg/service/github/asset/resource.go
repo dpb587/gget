@@ -10,15 +10,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Asset struct {
+type Resource struct {
 	client            *github.Client
 	releaseOwner      string
 	releaseRepository string
 	asset             github.ReleaseAsset
 }
 
-func NewAsset(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset) *Asset {
-	return &Asset{
+func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset) *Resource {
+	return &Resource{
 		client:            client,
 		releaseOwner:      releaseOwner,
 		releaseRepository: releaseRepository,
@@ -26,20 +26,16 @@ func NewAsset(client *github.Client, releaseOwner, releaseRepository string, ass
 	}
 }
 
-func (a *Asset) GetName() string {
-	return a.asset.GetName()
+func (r *Resource) GetName() string {
+	return r.asset.GetName()
 }
 
-func (a *Asset) GetSize() int64 {
-	return int64(a.asset.GetSize())
+func (r *Resource) GetSize() int64 {
+	return int64(r.asset.GetSize())
 }
 
-func (a *Asset) GetLocation(ctx context.Context) (string, error) {
-	return a.asset.GetBrowserDownloadURL(), nil
-}
-
-func (a *Asset) Open(ctx context.Context) (io.ReadCloser, error) {
-	remoteHandle, redirectURL, err := a.client.Repositories.DownloadReleaseAsset(ctx, a.releaseOwner, a.releaseRepository, a.asset.GetID())
+func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
+	remoteHandle, redirectURL, err := r.client.Repositories.DownloadReleaseAsset(ctx, r.releaseOwner, r.releaseRepository, r.asset.GetID())
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting asset")
 	}

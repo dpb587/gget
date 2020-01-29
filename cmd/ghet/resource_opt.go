@@ -7,36 +7,36 @@ import (
 	"github.com/pkg/errors"
 )
 
-type AssetNameOpt string
+type ResourceNameOpt string
 
-func (o *AssetNameOpt) Match(remote string) bool {
+func (o *ResourceNameOpt) Match(remote string) bool {
 	match, _ := filepath.Match(string(*o), remote)
 
 	return match
 }
 
-func (o *AssetNameOpt) Validate() error {
+func (o *ResourceNameOpt) Validate() error {
 	_, err := filepath.Match(string(*o), "test")
 	if err != nil {
-		return errors.Wrap(err, "expected valid asset matcher")
+		return errors.Wrap(err, "expected valid Resource matcher")
 	}
 
 	return nil
 }
 
-type AssetPathOpt struct {
-	RemoteMatch AssetNameOpt
+type ResourcePathOpt struct {
+	RemoteMatch ResourceNameOpt
 	LocalPath   string
 }
 
-func (o *AssetPathOpt) Resolve(remote string) (AssetPathOpt, bool) {
+func (o *ResourcePathOpt) Resolve(remote string) (ResourcePathOpt, bool) {
 	match := o.RemoteMatch.Match(remote)
 	if !match {
-		return AssetPathOpt{}, false
+		return ResourcePathOpt{}, false
 	}
 
-	res := AssetPathOpt{
-		RemoteMatch: AssetNameOpt(remote),
+	res := ResourcePathOpt{
+		RemoteMatch: ResourceNameOpt(remote),
 		LocalPath:   o.LocalPath,
 	}
 
@@ -49,14 +49,14 @@ func (o *AssetPathOpt) Resolve(remote string) (AssetPathOpt, bool) {
 	return res, true
 }
 
-func (o *AssetPathOpt) UnmarshalFlag(data string) error {
+func (o *ResourcePathOpt) UnmarshalFlag(data string) error {
 	dataSplit := strings.SplitN(data, "=", 2)
 
 	if len(dataSplit) == 2 {
-		o.RemoteMatch = AssetNameOpt(dataSplit[1])
+		o.RemoteMatch = ResourceNameOpt(dataSplit[1])
 		o.LocalPath = dataSplit[0]
 	} else {
-		o.RemoteMatch = AssetNameOpt(dataSplit[0])
+		o.RemoteMatch = ResourceNameOpt(dataSplit[0])
 		o.LocalPath = ""
 	}
 

@@ -10,65 +10,70 @@ import (
 	"sort"
 
 	"github.com/dpb587/ghet/pkg/downloader"
-	"github.com/dpb587/ghet/pkg/github"
-	githubasset "github.com/dpb587/ghet/pkg/github/asset"
-	"github.com/dpb587/ghet/pkg/model"
-	gogithub "github.com/google/go-github/v29/github"
+	"github.com/dpb587/ghet/pkg/service"
+	"github.com/dpb587/ghet/pkg/service/github"
 	"github.com/pkg/errors"
 	"github.com/tidwall/limiter"
 	"github.com/vbauerster/mpb/v4"
 )
 
+type ResourceOptions struct {
+	Type          string            `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
+	IgnoreMissing []ResourceNameOpt `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Exclude       []ResourceNameOpt `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"resource"`
+}
+
+type DownloadOptions struct {
+	ShowRef       bool `long:"show-ref" description:"list matched repository ref instead of downloading"`
+	ShowResources bool `long:"show-resources" description:"list matched resources instead of downloading"`
+
+	CD         string            `long:"cd" description:"change to directory before writing files"`
+	Executable []ResourceNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Stdout     bool              `long:"stdout" description:"write file contents to stdout rather than disk"`
+}
+
 type Command struct {
-	*Runtime `group:"Runtime Options"`
-
-	IgnoreMissing []AssetNameOpt `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing" value-name:"[ASSET]" optional:"true" optional-value:"*"`
-	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)" value-name:"ASSET"`
-
-	List bool `long:"list" description:"list matched assets instead of downloading"`
-
-	CD         string         `long:"cd" description:"change to directory before downloading"`
-	Executable []AssetNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[ASSET]" optional:"true" optional-value:"*"`
-	Stdout     bool           `long:"stdout" description:"write file contents to stdout rather than disk"`
-
-	Args CommandArgs `positional-args:"true" required:"true"`
+	*Runtime         `group:"Runtime Options"`
+	*ResourceOptions `group:"Resource Options"`
+	*DownloadOptions `group:"Download Options"`
+	Args             CommandArgs `positional-args:"true" required:"true"`
 }
 
 type CommandArgs struct {
-	Origin OriginOpt      `positional-arg-name:"OWNER/REPOSITORY[@REF]" description:"release reference"`
-	Assets []AssetPathOpt `positional-arg-name:"[LOCAL-PATH=]ASSET" description:"asset name(s) to download (glob-friendly)" optional:"true"`
+	Ref       RefOpt            `positional-arg-name:"OWNER/REPOSITORY[@REF]" description:"release reference"`
+	Resources []ResourcePathOpt `positional-arg-name:"[LOCAL-PATH=]resource" description:"resource name(s) to download (glob-friendly)" optional:"true"`
 }
 
 func (c *Command) applySettings() {
-	if c.Args.Origin.Server == "" {
-		c.Args.Origin.Server = c.Runtime.Server
+	if c.Args.Ref.Server == "" {
+		c.Args.Ref.Server = c.Runtime.Server
 	}
 
-	if len(c.Args.Assets) == 0 {
-		c.Args.Assets = []AssetPathOpt{
+	if len(c.Args.Resources) == 0 {
+		c.Args.Resources = []ResourcePathOpt{
 			{
-				RemoteMatch: AssetNameOpt("*"),
+				RemoteMatch: ResourceNameOpt("*"),
 			},
 		}
 	}
 
 	if c.Stdout {
-		for assetIdx, asset := range c.Args.Assets {
-			if asset.LocalPath != "" {
+		for resourceIdx, resource := range c.Args.Resources {
+			if resource.LocalPath != "" {
 				continue
 			}
 
-			c.Args.Assets[assetIdx].LocalPath = "-"
+			c.Args.Resources[resourceIdx].LocalPath = "-"
 		}
 	}
 
 	if c.CD != "" {
-		for assetIdx, asset := range c.Args.Assets {
-			if asset.LocalPath == "-" {
+		for resourceIdx, resource := range c.Args.Resources {
+			if resource.LocalPath == "-" {
 				continue
 			}
 
-			c.Args.Assets[assetIdx].LocalPath = filepath.Join(c.CD, asset.LocalPath)
+			c.Args.Resources[resourceIdx].LocalPath = filepath.Join(c.CD, resource.LocalPath)
 		}
 	}
 }
@@ -77,75 +82,70 @@ func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
 	ctx := context.Background()
-	client := c.Runtime.GitHubClient(c.Args.Origin.Server)
+	svc := github.NewService(c.Runtime.GitHubClient(c.Args.Ref.Server))
 
-	release, err := github.ResolveRelease(ctx, client, model.Origin(c.Args.Origin))
+	ref, err := svc.ResolveRef(ctx, service.Ref(c.Args.Ref))
 	if err != nil {
-		return errors.Wrap(err, "resolving release reference")
+		return errors.Wrap(err, "resolving ref")
 	}
 
-	checksums := githubasset.NewChecksumManager(release)
+	// checksums := githubasset.NewChecksumManager(release)
 
-	assetMap := map[string]gogithub.ReleaseAsset{}
-	assetMatches := make([]bool, len(c.Args.Assets))
+	resourceMap := map[string]service.ResolvedResource{}
+	userResourceMatches := make([]bool, len(c.Args.Resources))
 
-	for _, asset := range release.Assets {
-		{ // first check if it is excluded
-			var excluded bool
-
-			for _, assetNameOpt := range c.Exclude {
-				if assetNameOpt.Match(asset.GetName()) {
-					excluded = true
-
-					break
-				}
-			}
-
-			if excluded {
-				continue
-			}
+	for userResourceIdx, userResource := range c.Args.Resources {
+		candidateResources, err := ref.ResolveResource(ctx, service.Resource(string(userResource.RemoteMatch)))
+		if err != nil {
+			return errors.Wrapf(err, "resolving resource %s", string(userResource.RemoteMatch))
+		} else if len(candidateResources) == 0 {
+			// TODO ignore-missing
 		}
 
-		var resolved AssetPathOpt
+		for _, candidate := range candidateResources {
+			{ // is it excluded?
+				var excluded bool
 
-		{ // now check if its a match
-			var matched bool
-			for assetPathOptIdx, assetPathOpt := range c.Args.Assets {
-				resolved, matched = assetPathOpt.Resolve(asset.GetName())
-				if !matched {
+				for _, exclude := range c.Exclude {
+					if exclude.Match(candidate.GetName()) {
+						excluded = true
+
+						break
+					}
+				}
+
+				if excluded {
 					continue
 				}
-
-				assetMatches[assetPathOptIdx] = true
-
-				break
 			}
 
+			resolved, matched := userResource.Resolve(candidate.GetName())
 			if !matched {
-				continue
+				panic("TODO should always match by now?")
 			}
-		}
 
-		if _, found := assetMap[resolved.LocalPath]; found {
-			return fmt.Errorf("target file already specified: %s", resolved.LocalPath)
-		}
+			if _, found := resourceMap[resolved.LocalPath]; found {
+				return fmt.Errorf("target file already specified: %s", resolved.LocalPath)
+			}
 
-		assetMap[resolved.LocalPath] = asset
+			userResourceMatches[userResourceIdx] = true
+			resourceMap[resolved.LocalPath] = candidate
+		}
 	}
 
 	{ // finally, did we find everything the user asked for?
-		for assetIdx, assetMatched := range assetMatches {
-			if assetMatched {
+		for userResourceIdx, userResourceMatched := range userResourceMatches {
+			if userResourceMatched {
 				continue
 			}
 
-			return errors.Wrap(fmt.Errorf("no asset matched: %s", c.Args.Assets[assetIdx].RemoteMatch), "expected matching assets")
+			return errors.Wrap(fmt.Errorf("no resource matched: %s", c.Args.Resources[userResourceIdx].RemoteMatch), "expected matching resources")
 		}
 	}
 
-	if c.List {
-		for _, asset := range assetMap {
-			fmt.Println(asset.GetName())
+	if c.ShowResources {
+		for _, resource := range resourceMap {
+			fmt.Println(resource.GetName())
 		}
 
 		return nil
@@ -153,7 +153,7 @@ func (c *Command) Execute(_ []string) error {
 
 	var downloads []*downloader.Workflow
 
-	for localPath, asset := range assetMap {
+	for localPath, resource := range resourceMap {
 		var steps []downloader.Step
 
 		if localPath == "-" {
@@ -170,25 +170,25 @@ func (c *Command) Execute(_ []string) error {
 			)
 		}
 
-		cs, csFound, err := checksums.GetAssetChecksum(asset.GetName())
-		if err != nil {
-			return errors.Wrap(err, "getting asset checksum")
-		}
+		// cs, csFound, err := checksums.GetAssetChecksum(resource.GetName())
+		// if err != nil {
+		// 	return errors.Wrap(err, "getting resource checksum")
+		// }
 
-		if csFound {
-			steps = append(
-				steps,
-				&downloader.DownloadHashVerifier{
-					Algo:     cs.Type,
-					Expected: cs.Bytes,
-					Actual:   cs.Hasher(),
-				},
-			)
-		}
+		// if csFound {
+		// 	steps = append(
+		// 		steps,
+		// 		&downloader.DownloadHashVerifier{
+		// 			Algo:     cs.Type,
+		// 			Expected: cs.Bytes,
+		// 			Actual:   cs.Hasher(),
+		// 		},
+		// 	)
+		// }
 
 		if localPath != "-" {
-			for _, assetNameOpt := range c.Executable {
-				if !assetNameOpt.Match(asset.GetName()) {
+			for _, ResourceNameOpt := range c.Executable {
+				if !ResourceNameOpt.Match(resource.GetName()) {
 					continue
 				}
 
@@ -208,7 +208,7 @@ func (c *Command) Execute(_ []string) error {
 
 		downloads = append(
 			downloads,
-			downloader.NewWorkflow(githubasset.NewAsset(client, c.Args.Origin.Owner, c.Args.Origin.Repository, asset), steps...),
+			downloader.NewWorkflow(resource, steps...),
 		)
 	}
 
