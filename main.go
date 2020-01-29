@@ -8,17 +8,20 @@ import (
 )
 
 func main() {
-	main := ghet.New()
+	command := ghet.NewCommand()
 
-	var parser = flags.NewParser(&main, flags.Default)
+	parser := flags.NewParser(command, flags.Default)
 
 	if _, err := parser.Parse(); err != nil {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
-			panic(err)
-
 			os.Exit(1)
 		}
+	}
+
+	err := command.Execute(nil)
+	if err != nil {
+		panic(err)
 	}
 }

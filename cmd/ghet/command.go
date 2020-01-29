@@ -19,31 +19,29 @@ import (
 	"github.com/vbauerster/mpb/v4"
 )
 
-type AssetCmd struct {
-	*Global `no-flag:"true"`
-
-	Parallel int `long:"parallel" description:"maximum number of parallel operations" default:"4"`
-
-	CD string `long:"cd" description:"change to directory before downloading"`
+type Command struct {
+	*Runtime `group:"Runtime Options"`
 
 	IgnoreMissing []AssetNameOpt `long:"ignore-missing" description:"if an asset is not found, skip it rather than failing" value-name:"[ASSET]" optional:"true" optional-value:"*"`
 	Exclude       []AssetNameOpt `long:"exclude" description:"asset name to exclude from downloads (glob-friendly)" value-name:"ASSET"`
-	Executable    []AssetNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[ASSET]" optional:"true" optional-value:"*"`
 
-	List   bool `long:"list" description:"list matched assets instead of downloading"`
-	Stdout bool `long:"stdout" description:"write file contents to standard out rather than disk by default"`
+	List bool `long:"list" description:"list matched assets instead of downloading"`
 
-	Args AssetArgs `positional-args:"true" required:"true"`
+	CD         string         `long:"cd" description:"change to directory before downloading"`
+	Executable []AssetNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[ASSET]" optional:"true" optional-value:"*"`
+	Stdout     bool           `long:"stdout" description:"write file contents to stdout rather than disk"`
+
+	Args CommandArgs `positional-args:"true" required:"true"`
 }
 
-type AssetArgs struct {
+type CommandArgs struct {
 	Origin OriginOpt      `positional-arg-name:"OWNER/REPOSITORY[@REF]" description:"release reference"`
 	Assets []AssetPathOpt `positional-arg-name:"[LOCAL-PATH=]ASSET" description:"asset name(s) to download (glob-friendly)" optional:"true"`
 }
 
-func (c *AssetCmd) applySettings() {
+func (c *Command) applySettings() {
 	if c.Args.Origin.Server == "" {
-		c.Args.Origin.Server = c.Global.Server
+		c.Args.Origin.Server = c.Runtime.Server
 	}
 
 	if len(c.Args.Assets) == 0 {
@@ -75,11 +73,11 @@ func (c *AssetCmd) applySettings() {
 	}
 }
 
-func (c *AssetCmd) Execute(_ []string) error {
+func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
 	ctx := context.Background()
-	client := c.Global.GitHubClient(c.Args.Origin.Server)
+	client := c.Runtime.GitHubClient(c.Args.Origin.Server)
 
 	release, err := github.ResolveRelease(ctx, client, model.Origin(c.Args.Origin))
 	if err != nil {
@@ -220,7 +218,7 @@ func (c *AssetCmd) Execute(_ []string) error {
 
 	var pbO io.Writer = os.Stderr
 
-	if c.Global.Quiet {
+	if c.Runtime.Quiet {
 		pbO = ioutil.Discard
 	}
 
@@ -230,7 +228,7 @@ func (c *AssetCmd) Execute(_ []string) error {
 		d.Prepare(pb)
 	}
 
-	l := limiter.New(c.Parallel)
+	l := limiter.New(c.Runtime.Parallel)
 
 	for _, d := range downloads {
 		d := d
