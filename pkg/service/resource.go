@@ -7,8 +7,10 @@ import (
 
 type Resource string
 
+type ResourceType string
+
 type ResourceResolver interface {
-	ResolveResource(ctx context.Context, resource Resource) ([]ResolvedResource, error)
+	ResolveResource(ctx context.Context, resourceType ResourceType, resource Resource) ([]ResolvedResource, error)
 }
 
 type ResolvedResource interface {

@@ -18,9 +18,9 @@ import (
 )
 
 type ResourceOptions struct {
-	Type          string            `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
-	IgnoreMissing []ResourceNameOpt `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Exclude       []ResourceNameOpt `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"resource"`
+	Type          service.ResourceType `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
+	IgnoreMissing []ResourceNameOpt    `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Exclude       []ResourceNameOpt    `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"resource"`
 }
 
 type DownloadOptions struct {
@@ -95,7 +95,7 @@ func (c *Command) Execute(_ []string) error {
 	userResourceMatches := make([]bool, len(c.Args.Resources))
 
 	for userResourceIdx, userResource := range c.Args.Resources {
-		candidateResources, err := ref.ResolveResource(ctx, service.Resource(string(userResource.RemoteMatch)))
+		candidateResources, err := ref.ResolveResource(ctx, c.Type, service.Resource(string(userResource.RemoteMatch)))
 		if err != nil {
 			return errors.Wrapf(err, "resolving resource %s", string(userResource.RemoteMatch))
 		} else if len(candidateResources) == 0 {

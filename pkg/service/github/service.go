@@ -89,7 +89,7 @@ func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.Resol
 		return nil, errors.Wrap(err, "getting release")
 	}
 
-	return &Release{
+	return &ReleaseRef{
 		client:  s.client,
 		repo:    repo,
 		release: release,

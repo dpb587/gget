@@ -44,8 +44,14 @@ func (w *Workflow) Prepare(pb *mpb.Progress) {
 		decor.WC{W: 10, C: decor.DidentRight},
 	))
 
-	w.bars[2] = w.newBar(pb, w.bars[1], "", w.downloader.GetSize(), decor.OnComplete(
-		decor.NewPercentage("downloading (%d)"),
+	downloadSize := w.downloader.GetSize()
+	downloadDecor := decor.NewPercentage("downloading (%d)")
+	if downloadSize == 0 {
+		downloadDecor = decor.EwmaSpeed(decor.UnitKB, "downloading (%d)", 40)
+	}
+
+	w.bars[2] = w.newBar(pb, w.bars[1], "", downloadSize, decor.OnComplete(
+		downloadDecor,
 		"downloaded",
 	))
 
