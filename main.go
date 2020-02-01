@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/dpb587/ghet/cmd/ghet"
 	"github.com/jessevdk/go-flags"
@@ -10,18 +12,33 @@ import (
 func main() {
 	command := ghet.NewCommand()
 
-	parser := flags.NewParser(command, flags.Default)
+	parser := flags.NewParser(command, flags.PassDoubleDash)
 
-	if _, err := parser.Parse(); err != nil {
-		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
-			os.Exit(0)
-		} else {
-			os.Exit(1)
+	fatal := func(err error) {
+		if debug, _ := strconv.ParseBool(os.Getenv("DEBUG")); debug {
+			panic(err)
 		}
+
+		fmt.Fprintf(os.Stderr, "%s: %s\n", parser.Command.Name, err)
+
+		os.Exit(1)
 	}
 
-	err := command.Execute(nil)
-	if err != nil {
-		panic(err)
+	_, err := parser.Parse()
+	if command.Runtime.Help {
+		parser.WriteHelp(os.Stdout)
+		fmt.Printf("\n")
+
+		return
+	} else if command.Runtime.Version {
+		fmt.Println("TODO")
+
+		return
+	} else if err != nil {
+		fatal(err)
+	}
+
+	if err = command.Execute(nil); err != nil {
+		fatal(err)
 	}
 }

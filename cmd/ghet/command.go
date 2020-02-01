@@ -40,13 +40,13 @@ type Command struct {
 }
 
 type CommandArgs struct {
-	Ref       RefOpt            `positional-arg-name:"OWNER/REPOSITORY[@REF]" description:"release reference"`
-	Resources []ResourcePathOpt `positional-arg-name:"[LOCAL-PATH=]resource" description:"resource name(s) to download (glob-friendly)" optional:"true"`
+	Ref       RefOpt            `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"release reference"`
+	Resources []ResourcePathOpt `positional-arg-name:"[LOCAL-PATH=]RESOURCE" description:"resource name(s) to download (glob-friendly)" optional:"true"`
 }
 
 func (c *Command) applySettings() {
 	if c.Args.Ref.Server == "" {
-		c.Args.Ref.Server = c.Runtime.Server
+		c.Args.Ref.Server = "github.com" // c.Runtime.Server
 	}
 
 	if len(c.Args.Resources) == 0 {
@@ -89,7 +89,13 @@ func (c *Command) Execute(_ []string) error {
 		return errors.Wrap(err, "resolving ref")
 	}
 
-	// checksums := githubasset.NewChecksumManager(release)
+	if c.ShowRef {
+		for _, metadata := range ref.GetMetadata() {
+			fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
+		}
+
+		return nil
+	}
 
 	resourceMap := map[string]service.ResolvedResource{}
 	userResourceMatches := make([]bool, len(c.Args.Resources))
@@ -163,47 +169,33 @@ func (c *Command) Execute(_ []string) error {
 					Writer: os.Stdout,
 				},
 			)
+
+			continue
 		} else {
 			steps = append(
 				steps,
 				&downloader.DownloadTmpfileInstaller{},
 			)
-		}
 
-		// cs, csFound, err := checksums.GetAssetChecksum(resource.GetName())
-		// if err != nil {
-		// 	return errors.Wrap(err, "getting resource checksum")
-		// }
+			if localPath != "-" {
+				for _, ResourceNameOpt := range c.Executable {
+					if !ResourceNameOpt.Match(resource.GetName()) {
+						continue
+					}
 
-		// if csFound {
-		// 	steps = append(
-		// 		steps,
-		// 		&downloader.DownloadHashVerifier{
-		// 			Algo:     cs.Type,
-		// 			Expected: cs.Bytes,
-		// 			Actual:   cs.Hasher(),
-		// 		},
-		// 	)
-		// }
-
-		if localPath != "-" {
-			for _, ResourceNameOpt := range c.Executable {
-				if !ResourceNameOpt.Match(resource.GetName()) {
-					continue
+					steps = append(
+						steps,
+						&downloader.DownloadExecutableInstaller{},
+					)
 				}
 
 				steps = append(
 					steps,
-					&downloader.DownloadExecutableInstaller{},
+					&downloader.DownloadRenameInstaller{
+						Target: localPath,
+					},
 				)
 			}
-
-			steps = append(
-				steps,
-				&downloader.DownloadRenameInstaller{
-					Target: localPath,
-				},
-			)
 		}
 
 		downloads = append(

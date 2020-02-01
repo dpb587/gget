@@ -41,7 +41,7 @@ func (o *ResourcePathOpt) Resolve(remote string) (ResourcePathOpt, bool) {
 	}
 
 	if res.LocalPath == "" {
-		res.LocalPath = string(res.RemoteMatch)
+		res.LocalPath = remote
 	} else if strings.HasSuffix(res.LocalPath, "/") {
 		res.LocalPath = filepath.Join(res.LocalPath, string(res.RemoteMatch))
 	}
