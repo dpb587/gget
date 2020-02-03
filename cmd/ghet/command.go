@@ -20,7 +20,7 @@ import (
 type ResourceOptions struct {
 	Type          service.ResourceType `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
 	IgnoreMissing []ResourceNameOpt    `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Exclude       []ResourceNameOpt    `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"resource"`
+	Exclude       []ResourceNameOpt    `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"RESOURCE"`
 }
 
 type DownloadOptions struct {
@@ -45,10 +45,6 @@ type CommandArgs struct {
 }
 
 func (c *Command) applySettings() {
-	if c.Args.Ref.Server == "" {
-		c.Args.Ref.Server = "github.com" // c.Runtime.Server
-	}
-
 	if len(c.Args.Resources) == 0 {
 		c.Args.Resources = []ResourcePathOpt{
 			{
@@ -82,7 +78,7 @@ func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
 	ctx := context.Background()
-	svc := github.NewService(c.Runtime.GitHubClient(c.Args.Ref.Server))
+	svc := github.NewService(&github.ClientFactory{})
 
 	ref, err := svc.ResolveRef(ctx, service.Ref(c.Args.Ref))
 	if err != nil {
@@ -94,7 +90,10 @@ func (c *Command) Execute(_ []string) error {
 			fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
 		}
 
-		return nil
+		if !c.ShowResources {
+			// early exit unless also showing resources
+			return nil
+		}
 	}
 
 	resourceMap := map[string]service.ResolvedResource{}
