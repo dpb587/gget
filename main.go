@@ -5,12 +5,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/dpb587/ghet/cmd/ghet"
+	"github.com/dpb587/gget/cmd/gget"
 	"github.com/jessevdk/go-flags"
 )
 
 func main() {
-	command := ghet.NewCommand()
+	command := gget.NewCommand()
 
 	parser := flags.NewParser(command, flags.PassDoubleDash)
 

@@ -1,4 +1,4 @@
-module github.com/dpb587/ghet
+module github.com/dpb587/gget
 
 go 1.13
 

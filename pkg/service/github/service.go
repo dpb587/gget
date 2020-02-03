@@ -7,7 +7,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/dpb587/ghet/pkg/service"
+	"github.com/dpb587/gget/pkg/service"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )

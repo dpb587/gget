@@ -1,4 +1,4 @@
-package ghet
+package gget
 
 import (
 	"path/filepath"

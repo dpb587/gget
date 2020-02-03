@@ -1,4 +1,4 @@
-package ghet
+package gget
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/dpb587/ghet/pkg/downloader"
-	"github.com/dpb587/ghet/pkg/service"
-	"github.com/dpb587/ghet/pkg/service/github"
+	"github.com/dpb587/gget/pkg/downloader"
+	"github.com/dpb587/gget/pkg/service"
+	"github.com/dpb587/gget/pkg/service/github"
 	"github.com/pkg/errors"
 	"github.com/tidwall/limiter"
 	"github.com/vbauerster/mpb/v4"

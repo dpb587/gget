@@ -1,8 +1,8 @@
 package asset
 
 import (
-	"github.com/dpb587/ghet/pkg/checksum"
-	"github.com/dpb587/ghet/pkg/model"
+	"github.com/dpb587/gget/pkg/checksum"
+	"github.com/dpb587/gget/pkg/model"
 	"github.com/google/go-github/v29/github"
 )
 

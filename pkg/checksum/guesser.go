@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/dpb587/ghet/pkg/model"
+	"github.com/dpb587/gget/pkg/model"
 )
 
 func GuessChecksum(cs string) (model.Checksum, error) {

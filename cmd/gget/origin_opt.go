@@ -1,10 +1,10 @@
-package ghet
+package gget
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/dpb587/ghet/pkg/service"
+	"github.com/dpb587/gget/pkg/service"
 )
 
 type RefOpt service.Ref

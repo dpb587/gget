@@ -4,8 +4,8 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/dpb587/ghet/pkg/service"
-	"github.com/dpb587/ghet/pkg/service/github/asset"
+	"github.com/dpb587/gget/pkg/service"
+	"github.com/dpb587/gget/pkg/service/github/asset"
 	"github.com/google/go-github/v29/github"
 )
 

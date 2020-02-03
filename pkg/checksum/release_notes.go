@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dpb587/ghet/pkg/model"
+	"github.com/dpb587/gget/pkg/model"
 	"github.com/pkg/errors"
 )
 

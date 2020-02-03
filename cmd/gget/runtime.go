@@ -1,4 +1,4 @@
-package ghet
+package gget
 
 type Runtime struct {
 	Quiet    bool `long:"quiet" description:"suppress status reporting"`
