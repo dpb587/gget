@@ -40,17 +40,11 @@ Use `--help` to see all options and learn more about advanced usage.
 
 The following services are supported through their APIs:
 
- * **GitHub** – authentication tokens may be set via `$GITHUB_TOKEN` or a `.netrc` password
+ * **GitHub** – personal access tokens may be set via `$GITHUB_TOKEN` or a `.netrc` password
 
 ## Installation
 
 Binaries for Linux, macOS, and Windows can be downloaded from the [releases](https://github.com/dpb587/gget/releases) page.
-
-A [Brew](https://brew.sh/) recipe is available for Linux and macOS.
-
-```
-brew install dpb587/tap/gget
-```
 
 Use `go get` to build the latest development version.
 
@@ -60,8 +54,8 @@ go get -u github.com/dpb587/gget
 
 ## Alternatives
 
- * `wget`/`shasum`/`chmod` -- requires manually building commands
- * [`hub release download ...`](https://github.com/github/hub) -- requires an existing git working directory
+ * `wget`/`curl` -- if you want to manually maintain download URLs and private signing
+ * [`hub release download ...`](https://github.com/github/hub) -- if you already have `git` configured and a cloned GitHub repository
 
 ## License
 
