@@ -20,6 +20,12 @@ better name?
 
 ## gitlab support
 
+## checksum
+
+add back checksum verification
+
+## gpg verifier
+
 ## sdk/library usage
 
 not primary focus, but make it easier to embed this as a package for tooling
