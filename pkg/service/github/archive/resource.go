@@ -43,7 +43,7 @@ func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
 	var err error
 
 	ext := filepath.Ext(r.filename)
-	if ext == "gz" {
+	if ext == ".gz" {
 		ext = fmt.Sprintf("%s%s", filepath.Ext(strings.TrimSuffix(r.filename, ext)), ext)
 	}
 

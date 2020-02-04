@@ -2,9 +2,14 @@
 
 some items in the queue...
 
-## ghet/gget/gitget
+## ghet/gget/gitget/gurl/(g)installer/getter/gitter/garia
+
+download
+curl/wget/aria2c
 
 better name?
+
+## fix --ignore-missing
 
 ## brewable
 
@@ -29,3 +34,5 @@ add back checksum verification
 ## sdk/library usage
 
 not primary focus, but make it easier to embed this as a package for tooling
+
+## testing

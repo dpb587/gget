@@ -50,46 +50,54 @@ func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.Resol
 		return s.ResolveRef(ctx, ref)
 	}
 
-	// tag
-	gitref, resp, err := client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("tags", ref.Ref))
-	if resp.StatusCode == http.StatusNotFound {
-		// oh well
-	} else if err != nil {
-		return nil, errors.Wrap(err, "attempting tag resolution")
-	} else if len(gitref) == 1 {
-		return s.resolveTagReference(ctx, client, repo, gitref[0])
+	{ // tag
+		gitref, resp, err := client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("tags", ref.Ref))
+		if resp.StatusCode == http.StatusNotFound {
+			// oh well
+		} else if err != nil {
+			return nil, errors.Wrap(err, "attempting tag resolution")
+		} else if len(gitref) == 1 {
+			return s.resolveTagReference(ctx, client, repo, gitref[0])
+		}
 	}
 
-	// head
-	gitref, _, err = client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("heads", ref.Ref))
-	if err != nil {
-		return nil, errors.Wrap(err, "attempting branch resolution")
-	} else if len(gitref) == 1 {
-		return s.resolveHeadReference(ctx, client, repo, gitref[0])
+	{ // head
+		gitref, resp, err := client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("heads", ref.Ref))
+		if resp.StatusCode == http.StatusNotFound {
+			// oh well
+		} else if err != nil {
+			return nil, errors.Wrap(err, "attempting branch resolution")
+		} else if len(gitref) == 1 {
+			return s.resolveHeadReference(ctx, client, repo, gitref[0])
+		}
 	}
 
-	// commit
-	commitref, _, err := client.Git.GetCommit(ctx, repo.GetOwner().GetLogin(), repo.GetName(), ref.Ref)
-	if err != nil {
-		return nil, errors.Wrap(err, "attempting commit resolution")
-	} else if gitref != nil {
-		return s.resolveCommitReference(ctx, client, repo, commitref)
+	{ // commit
+		// client.Git.GetCommit does not resolve partial commits
+		commitref, resp, err := client.Repositories.GetCommit(ctx, repo.GetOwner().GetLogin(), repo.GetName(), ref.Ref)
+		if resp.StatusCode == http.StatusNotFound {
+			return nil, nil
+		} else if err != nil {
+			return nil, errors.Wrap(err, "attempting commit resolution")
+		}
+
+		return s.resolveCommitReference(ctx, client, repo, commitref.GetSHA())
 	}
 
 	return nil, fmt.Errorf("unable to resolve: %s", ref.Ref)
 }
 
-func (s Service) resolveCommitReference(ctx context.Context, client *github.Client, repo *github.Repository, commitRef *github.Commit) (service.ResolvedRef, error) {
+func (s Service) resolveCommitReference(ctx context.Context, client *github.Client, repo *github.Repository, commitSHA string) (service.ResolvedRef, error) {
 	res := &CommitRef{
 		client:          client,
 		repo:            repo,
-		commit:          commitRef.GetSHA(),
-		archiveFileBase: fmt.Sprintf("%s-%s", repo.GetName(), commitRef.GetSHA()[0:9]),
+		commit:          commitSHA,
+		archiveFileBase: fmt.Sprintf("%s-%s", repo.GetName(), commitSHA[0:9]),
 		RefMetadataService: service.RefMetadataService{
 			Metadata: []service.RefMetadata{
 				{
 					Name:  "commit",
-					Value: commitRef.GetSHA(),
+					Value: commitSHA,
 				},
 			},
 		},
