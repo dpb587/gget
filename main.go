@@ -6,13 +6,18 @@ import (
 	"strconv"
 
 	"github.com/dpb587/gget/cmd/gget"
+	"github.com/dpb587/gget/pkg/app"
 	"github.com/jessevdk/go-flags"
 )
 
-func main() {
-	command := gget.NewCommand()
+var appName = "gget"
+var appSemver, appCommit, appBuilt string
 
-	parser := flags.NewParser(command, flags.PassDoubleDash)
+func main() {
+	cmd := gget.NewCommand()
+	v := app.MustVersion(appName, appSemver, appCommit, appBuilt)
+
+	parser := flags.NewParser(cmd, flags.PassDoubleDash)
 
 	fatal := func(err error) {
 		if debug, _ := strconv.ParseBool(os.Getenv("DEBUG")); debug {
@@ -25,20 +30,22 @@ func main() {
 	}
 
 	_, err := parser.Parse()
-	if command.Runtime.Help {
+	if cmd.Runtime.Help {
 		parser.WriteHelp(os.Stdout)
 		fmt.Printf("\n")
 
 		return
-	} else if command.Runtime.Version {
-		fmt.Println("TODO")
+	} else if l := len(cmd.Runtime.Version); l > 0 {
+		if l > 1 {
+			app.WriteVersionVerbose(os.Stdout, v, os.Args[0])
+		} else {
+			app.WriteVersion(os.Stdout, v)
+		}
 
 		return
-	} else if err != nil {
-		fatal(err)
 	}
 
-	if err = command.Execute(nil); err != nil {
+	if err = cmd.Execute(nil); err != nil {
 		fatal(err)
 	}
 }
