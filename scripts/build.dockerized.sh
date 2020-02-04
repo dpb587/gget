@@ -9,4 +9,4 @@ docker run --rm \
   --volume=$PWD:/root \
   --workdir=/root \
   dpb587/gget:build \
-  ./scripts/build.sh
+  ./scripts/build.local.sh "$@"

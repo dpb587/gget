@@ -1,0 +1,81 @@
+name: Versioning
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  publish:
+    name: Publish Release
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Checkout Tag
+      uses: actions/checkout@v1
+    - name: Build Assets
+      id: build
+      run: |
+        version="$( echo "${{ github.ref }}" | sed 's#refs/tags/v##' )"
+        echo ::set-output name=version::"$version"
+
+        mkdir tmp
+        
+        if [[ -e "docs/releases/v${version}.md" ]]; then
+          sed '1{/^---$/!q;};1,/^---$/d' "docs/releases/v${version}.md" > tmp/release-body
+          echo "" >> tmp/release-body
+        fi
+
+        ./scripts/build.dockerized.sh "$version"
+
+        cd tmp/build
+
+        (
+          echo "**Artifacts**"
+          echo ""
+          echo "                                                              sha256  file"
+        ) >> ../release-body
+
+        for os in darwin linux windows; do
+          filename=$( echo *-$os-* )
+          echo ::set-output name=filename_$os::"$filename"
+
+          shasum -a 256 $filename | tee /dev/stderr | sed 's/^/    /' >> ../release-body
+        done
+
+        echo ::set-output name=release_body::"$( jq -rRs 'gsub("\r";"%0D")|gsub("\n";"%0A")|gsub("]";"%5D")|gsub(";";"%3B")' < ../release-body )"
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@master # v1 https://github.com/actions/create-release/issues/38
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: v${{ steps.build.outputs.version }}
+        body: ${{ steps.build.outputs.release_body }}
+        draft: true
+        prerelease: false
+    - name: Upload Asset (darwin)
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./tmp/build/${{ steps.build.outputs.filename_darwin }}
+          asset_name: ${{ steps.build.outputs.filename_darwin }}
+          asset_content_type: application/octet-stream
+    - name: Upload Asset (linux)
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./tmp/build/${{ steps.build.outputs.filename_linux }}
+          asset_name: ${{ steps.build.outputs.filename_linux }}
+          asset_content_type: application/octet-stream
+    - name: Upload Asset (windows)
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./tmp/build/${{ steps.build.outputs.filename_windows }}
+          asset_name: ${{ steps.build.outputs.filename_windows }}
+          asset_content_type: application/octet-stream
