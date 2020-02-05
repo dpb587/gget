@@ -104,7 +104,15 @@ func (c *Command) Execute(_ []string) error {
 		if err != nil {
 			return errors.Wrapf(err, "resolving resource %s", string(userResource.RemoteMatch))
 		} else if len(candidateResources) == 0 {
-			// TODO ignore-missing
+			for _, ignoreMissing := range c.IgnoreMissing {
+				if ignoreMissing.Match(string(userResource.RemoteMatch)) {
+					userResourceMatches[userResourceIdx] = true
+
+					break
+				}
+			}
+
+			continue
 		}
 
 		for _, candidate := range candidateResources {
