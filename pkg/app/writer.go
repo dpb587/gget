@@ -11,27 +11,69 @@ import (
 	"rsc.io/goversion/version"
 )
 
-func WriteVersion(w io.Writer, v Version) {
-	fmt.Fprintf(w, "%s\n", v.String())
-
-	return
+type versionRecord struct {
+	Type      string
+	Component string
+	Version   string
+	Metadata  []string
 }
 
-func WriteVersionVerbose(w io.Writer, v Version, self string) {
-	fmt.Fprintf(w, "app\t%s\t%s\t(commit %s; built %s)\n", v.Name, v.Semver, v.Commit, v.Built.Format(time.RFC3339))
-	fmt.Fprintf(w, "build\t%s\t%s\n", "go", runtime.Version())
+func WriteVersion(w io.Writer, self string, v Version, verbosity int) {
+	if verbosity == 0 {
+		fmt.Fprintf(w, "%s\n", v.String())
 
-	vv, err := version.ReadExe(os.Args[0])
-	if err != nil {
 		return
 	}
 
-	for _, line := range strings.Split(strings.TrimSpace(vv.ModuleInfo), "\n") {
-		row := strings.Split(line, "\t")
-		if row[0] != "dep" {
-			continue
-		}
+	records := []versionRecord{
+		{
+			Type:      "app",
+			Component: v.Name,
+			Version:   v.Semver,
+			Metadata: []string{
+				fmt.Sprintf("commit %s", v.Commit),
+				fmt.Sprintf("built %s", v.Built.Format(time.RFC3339)),
+			},
+		},
+		{
+			Type:      "build",
+			Component: "go",
+			Version:   runtime.Version(),
+		},
+	}
 
-		fmt.Fprintf(w, "%s\t%s\t%s\t(hash %s)\n", row[0], row[1], row[2], row[3])
+	if vv, err := version.ReadExe(os.Args[0]); err == nil {
+		for _, line := range strings.Split(strings.TrimSpace(vv.ModuleInfo), "\n") {
+			row := strings.Split(line, "\t")
+			if row[0] != "dep" {
+				continue
+			}
+
+			records = append(
+				records,
+				versionRecord{
+					Type:      "dep",
+					Component: row[1],
+					Version:   row[2],
+					Metadata: []string{
+						fmt.Sprintf("hash %s", row[3]),
+					},
+				},
+			)
+		}
+	}
+
+	var f func(versionRecord) string = func(r versionRecord) string {
+		return fmt.Sprintf("%s\t%s\t%s\n", r.Type, r.Component, r.Version)
+	}
+
+	if verbosity > 1 {
+		f = func(r versionRecord) string {
+			return fmt.Sprintf("%s\t%s\t%s\t%s\n", r.Type, r.Component, r.Version, strings.Join(r.Metadata, "; "))
+		}
+	}
+
+	for _, record := range records {
+		fmt.Fprintf(w, f(record))
 	}
 }

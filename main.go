@@ -35,12 +35,8 @@ func main() {
 		fmt.Printf("\n")
 
 		return
-	} else if l := len(cmd.Runtime.Version); l > 0 {
-		if l > 1 {
-			app.WriteVersionVerbose(os.Stdout, v, os.Args[0])
-		} else {
-			app.WriteVersion(os.Stdout, v)
-		}
+	} else if cmd.Runtime.Version {
+		app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
 
 		return
 	}
