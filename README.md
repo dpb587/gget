@@ -46,6 +46,12 @@ The following services are supported through their APIs:
 
 Binaries for Linux, macOS, and Windows can be downloaded from the [releases](https://github.com/dpb587/gget/releases) page.
 
+A [Homebrew](https://brew.sh/) recipe is available for Linux and macOS.
+
+```
+brew install dpb587/tap/gget
+```
+
 Use `go get` to build the latest development version.
 
 ```
