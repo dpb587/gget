@@ -28,9 +28,8 @@ jobs:
         cd tmp/build
 
         (
-          echo "**Artifacts**"
+          echo "**Artifacts (sha256)**"
           echo ""
-          echo "                                                              sha256  file"
         ) >> ../release-body
 
         for os in darwin linux windows; do
