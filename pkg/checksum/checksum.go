@@ -1,4 +1,4 @@
-package model
+package checksum
 
 import "hash"
 
@@ -7,5 +7,3 @@ type Checksum struct {
 	Bytes  string
 	Hasher func() hash.Hash
 }
-
-type ChecksumMap map[string]Checksum

@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/dpb587/gget/pkg/service"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
@@ -16,6 +17,8 @@ type Resource struct {
 	releaseRepository string
 	asset             github.TreeEntry
 }
+
+var _ service.ResolvedResource = &Resource{}
 
 func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.TreeEntry) *Resource {
 	return &Resource{

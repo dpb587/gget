@@ -5,11 +5,9 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
-
-	"github.com/dpb587/gget/pkg/model"
 )
 
-func GuessChecksum(cs string) (model.Checksum, error) {
+func GuessChecksum(cs string) (Checksum, error) {
 	var hasher func() hash.Hash
 	var name string
 
@@ -21,10 +19,10 @@ func GuessChecksum(cs string) (model.Checksum, error) {
 		name = "sha256"
 		hasher = sha256.New
 	default:
-		return model.Checksum{}, fmt.Errorf("unrecognized checksum: %s", cs)
+		return Checksum{}, fmt.Errorf("unrecognized checksum: %s", cs)
 	}
 
-	return model.Checksum{
+	return Checksum{
 		Type:   name,
 		Bytes:  cs,
 		Hasher: hasher,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 
+	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/service/github/asset"
 	"github.com/google/go-github/v29/github"
@@ -14,6 +15,8 @@ type ReleaseRef struct {
 	repo      *github.Repository
 	release   *github.RepositoryRelease
 	targetRef service.ResolvedRef
+
+	checksumManager checksum.Manager
 }
 
 var _ service.ResourceResolver = &CommitRef{}
@@ -23,7 +26,7 @@ func (r *ReleaseRef) GetMetadata() []service.RefMetadata {
 }
 
 func (r *ReleaseRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.Resource) ([]service.ResolvedResource, error) {
-	if resourceType == "asset" {
+	if resourceType == service.AssetResourceType {
 		return r.resolveAssetResource(ctx, resource)
 	}
 
@@ -38,7 +41,10 @@ func (r *ReleaseRef) resolveAssetResource(ctx context.Context, resource service.
 			continue
 		}
 
-		res = append(res, asset.NewResource(r.client, r.repo.GetOwner().GetLogin(), r.repo.GetName(), candidate))
+		res = append(
+			res,
+			asset.NewResource(r.client, r.repo.GetOwner().GetLogin(), r.repo.GetName(), candidate, r.checksumManager),
+		)
 	}
 
 	return res, nil

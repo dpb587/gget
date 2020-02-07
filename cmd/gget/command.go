@@ -78,7 +78,7 @@ func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
 	ctx := context.Background()
-	svc := github.NewService(&github.ClientFactory{})
+	svc := github.NewService(c.Runtime.Logger(), &github.ClientFactory{RoundTripFactory: c.Runtime.RoundTripLogger})
 
 	ref, err := svc.ResolveRef(ctx, service.Ref(c.Args.Ref))
 	if err != nil {
@@ -91,7 +91,7 @@ func (c *Command) Execute(_ []string) error {
 		}
 
 		if !c.ShowResources {
-			// early exit unless also showing resources
+			// exit early unless they also want to see resources
 			return nil
 		}
 	}
@@ -176,33 +176,40 @@ func (c *Command) Execute(_ []string) error {
 					Writer: os.Stdout,
 				},
 			)
-
-			continue
 		} else {
 			steps = append(
 				steps,
 				&downloader.DownloadTmpfileInstaller{},
 			)
+		}
 
-			if localPath != "-" {
-				for _, ResourceNameOpt := range c.Executable {
-					if !ResourceNameOpt.Match(resource.GetName()) {
-						continue
-					}
+		if ds, ok := resource.(downloader.StepProvider); ok {
+			extraSteps, err := ds.GetDownloaderSteps(ctx)
+			if err != nil {
+				return errors.Wrap(err, "getting download steps")
+			}
 
-					steps = append(
-						steps,
-						&downloader.DownloadExecutableInstaller{},
-					)
+			steps = append(steps, extraSteps...)
+		}
+
+		if localPath != "-" {
+			for _, ResourceNameOpt := range c.Executable {
+				if !ResourceNameOpt.Match(resource.GetName()) {
+					continue
 				}
 
 				steps = append(
 					steps,
-					&downloader.DownloadRenameInstaller{
-						Target: localPath,
-					},
+					&downloader.DownloadExecutableInstaller{},
 				)
 			}
+
+			steps = append(
+				steps,
+				&downloader.DownloadRenameInstaller{
+					Target: localPath,
+				},
+			)
 		}
 
 		downloads = append(

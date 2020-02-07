@@ -1,7 +1,9 @@
 package gget
 
-func NewCommand() *Command {
+import "github.com/dpb587/gget/pkg/app"
+
+func NewCommand(app app.Version) *Command {
 	return &Command{
-		Runtime: &Runtime{},
+		Runtime: NewRuntime(app),
 	}
 }

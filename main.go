@@ -14,8 +14,8 @@ var appName = "gget"
 var appSemver, appCommit, appBuilt string
 
 func main() {
-	cmd := gget.NewCommand()
 	v := app.MustVersion(appName, appSemver, appCommit, appBuilt)
+	cmd := gget.NewCommand(v)
 
 	parser := flags.NewParser(cmd, flags.PassDoubleDash)
 
@@ -24,7 +24,7 @@ func main() {
 			panic(err)
 		}
 
-		fmt.Fprintf(os.Stderr, "%s: %s\n", parser.Command.Name, err)
+		fmt.Fprintf(os.Stderr, "%s: error: %s\n", parser.Command.Name, err)
 
 		os.Exit(1)
 	}

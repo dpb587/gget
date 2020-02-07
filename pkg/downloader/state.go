@@ -28,3 +28,7 @@ type DownloadAsset interface {
 	GetSize() int64
 	Open(ctx context.Context) (io.ReadCloser, error)
 }
+
+type StepProvider interface {
+	GetDownloaderSteps(ctx context.Context) ([]Step, error)
+}

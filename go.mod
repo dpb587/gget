@@ -8,6 +8,7 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pkg/errors v0.8.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/tidwall/limiter v0.0.0-20181220020158-fcddc63bb521
 	github.com/vbauerster/mpb/v4 v4.11.2
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect

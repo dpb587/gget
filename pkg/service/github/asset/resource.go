@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/dpb587/gget/pkg/checksum"
+	"github.com/dpb587/gget/pkg/downloader"
+	"github.com/dpb587/gget/pkg/service"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
@@ -14,15 +17,20 @@ type Resource struct {
 	client            *github.Client
 	releaseOwner      string
 	releaseRepository string
+	checksumManager   checksum.Manager
 	asset             github.ReleaseAsset
 }
 
-func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset) *Resource {
+var _ service.ResolvedResource = &Resource{}
+var _ downloader.StepProvider = &Resource{}
+
+func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset, checksumManager checksum.Manager) *Resource {
 	return &Resource{
 		client:            client,
 		releaseOwner:      releaseOwner,
 		releaseRepository: releaseRepository,
 		asset:             asset,
+		checksumManager:   checksumManager,
 	}
 }
 
@@ -32,6 +40,25 @@ func (r *Resource) GetName() string {
 
 func (r *Resource) GetSize() int64 {
 	return int64(r.asset.GetSize())
+}
+
+func (r *Resource) GetDownloaderSteps(ctx context.Context) ([]downloader.Step, error) {
+	cs, found, err := r.checksumManager.GetChecksum(ctx, r.asset.GetName())
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting checksum of %s", r.asset.GetName())
+	} else if !found {
+		return nil, nil
+	}
+
+	res := []downloader.Step{
+		&downloader.DownloadHashVerifier{
+			Algo:     cs.Type,
+			Expected: cs.Bytes,
+			Actual:   cs.Hasher(),
+		},
+	}
+
+	return res, nil
 }
 
 func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
