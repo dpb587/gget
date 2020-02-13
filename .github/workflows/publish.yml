@@ -28,7 +28,7 @@ jobs:
         cd tmp/build
 
         (
-          echo "**Artifacts (sha256)**"
+          echo "**Assets (sha256)**"
           echo ""
         ) >> ../release-body
 
@@ -39,7 +39,7 @@ jobs:
           shasum -a 256 $filename | tee /dev/stderr | sed 's/^/    /' >> ../release-body
         done
 
-        echo ::set-output name=release_body::"$( jq -rRs 'gsub("\r";"%0D")|gsub("\n";"%0A")|gsub("]";"%5D")|gsub(";";"%3B")' < ../release-body )"
+        echo ::set-output name=release_body::"$( jq -rRs 'gsub("\r";"%0D")|gsub("\n";"%0A")' < ../release-body )"
     - name: Create Release
       id: create_release
       uses: actions/create-release@master # v1 https://github.com/actions/create-release/issues/38
