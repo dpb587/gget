@@ -50,6 +50,21 @@ Use `--help` to see all options and learn more about advanced usage.
 
     gget --help
 
+## Docker Usage
+
+The `dpb587/gget` image can be used as a build stage for finding and downloading assets for use in a subsequent stage.
+
+```
+FROM dpb587/gget as gget
+RUN gget --exec github.com/cloudfoundry/bosh-cli bosh=bosh-cli-*-linux-amd64
+RUN gget --exec github.com/cloudfoundry/bosh-bootloader bbl=bbl-*_linux_x86-64
+RUN gget --stdout github.com/pivotal-cf/om om-linux-*.tar.gz | tar -xzf- om
+
+FROM ubuntu
+COPY --from=gget /result/* /usr/local/bin/
+...everything else for your image...
+```
+
 ## Services
 
 The following services are supported through their APIs:
