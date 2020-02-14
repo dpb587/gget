@@ -42,13 +42,29 @@ Use the `--type=` option to download files other than user-uploaded release asse
 
     gget --type=archive github.com/stedolan/jq '*.zip'
 
-Use the `blob` type to download individual repository files. In addition to tags, branch and commit references may be used for these types.
+Use the `blob` type to download individual repository files. Branch and commit references may also be used for these types.
 
     gget --type=blob github.com/stedolan/jq@jq-1.5-branch README.md
 
 Use `--help` to see all options and learn more about advanced usage.
 
     gget --help
+
+### Installation
+
+Binaries for Linux, macOS, and Windows can be downloaded from the [releases](https://github.com/dpb587/gget/releases) page.
+
+A [Homebrew](https://brew.sh/) recipe is available for Linux and macOS.
+
+```
+brew install dpb587/tap/gget
+```
+
+Use `go get` to build the latest development version.
+
+```
+go get -u github.com/dpb587/gget
+```
 
 ## Docker Usage
 
@@ -70,22 +86,6 @@ COPY --from=gget /result/* /usr/local/bin/
 The following services are supported through their APIs:
 
  * **GitHub** – personal access tokens may be set via `$GITHUB_TOKEN` or a `.netrc` password
-
-## Installation
-
-Binaries for Linux, macOS, and Windows can be downloaded from the [releases](https://github.com/dpb587/gget/releases) page.
-
-A [Homebrew](https://brew.sh/) recipe is available for Linux and macOS.
-
-```
-brew install dpb587/tap/gget
-```
-
-Use `go get` to build the latest development version.
-
-```
-go get -u github.com/dpb587/gget
-```
 
 ## Alternatives
 
