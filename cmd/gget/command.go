@@ -179,7 +179,9 @@ func (c *Command) Execute(_ []string) error {
 		} else {
 			steps = append(
 				steps,
-				&downloader.DownloadTmpfileInstaller{},
+				&downloader.DownloadTmpfileInstaller{
+					Tmpdir: filepath.Dir(localPath),
+				},
 			)
 		}
 

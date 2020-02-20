@@ -24,7 +24,7 @@ func (dpi *DownloadTmpfileInstaller) GetProgressParams() (int64, decor.Decorator
 }
 
 func (dpi *DownloadTmpfileInstaller) GetWriter() (io.Writer, error) {
-	p, err := ioutil.TempFile(dpi.Tmpdir, "gget-tmpfile-*")
+	p, err := ioutil.TempFile(dpi.Tmpdir, ".gget-*")
 	if err != nil {
 		return nil, errors.Wrap(err, "creating tempfile")
 	}
