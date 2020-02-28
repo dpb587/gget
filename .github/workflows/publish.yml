@@ -1,10 +1,10 @@
-name: Versioning
+name: Publish
 on:
   push:
     tags:
       - 'v*'
 jobs:
-  publish:
+  release:
     name: Publish Release
     runs-on: ubuntu-18.04
     steps:
@@ -49,7 +49,7 @@ jobs:
         tag_name: ${{ github.ref }}
         release_name: v${{ steps.build.outputs.version }}
         body: ${{ steps.build.outputs.release_body }}
-        draft: true
+        draft: false
         prerelease: false
     - name: Upload Asset (darwin)
       uses: actions/upload-release-asset@v1.0.1
@@ -78,3 +78,42 @@ jobs:
           asset_path: ./tmp/build/${{ steps.build.outputs.filename_windows }}
           asset_name: ${{ steps.build.outputs.filename_windows }}
           asset_content_type: application/octet-stream
+  docker:
+    name: Publish Docker
+    runs-on: ubuntu-18.04
+    needs:
+    - release
+    env:
+      IMAGE_NAME: gget
+    steps:
+    - name: Prepare
+      id: prepare
+      run: |
+        version="$( echo "${{ github.ref }}" | sed 's#refs/tags/v##' )"
+        echo ::set-output name=version::"$version"
+
+        image=docker.pkg.github.com/${{ github.repository }}/$IMAGE_NAME
+        echo ::set-output name=image::"$image"
+    - uses: actions/checkout@v1
+    - name: Build Image
+      run: |
+        docker build build/docker/$IMAGE_NAME \
+          --build-arg GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} \
+          --build-arg GGET_REF=github.com/${{ github.repository }} \
+          --build-arg GGET_VERSION=v${{ steps.prepare.outputs.version }} \
+          --tag image
+    - name: Registry Login
+      run: |
+        echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+    - name: Publish Images
+      run: |
+        for tag in \
+          ${{ steps.prepare.outputs.version }} \
+          $( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1-2 ) \
+          $( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1 ) \
+          latest \
+        ; do
+          fqimagetag="${{ steps.prepare.outputs.image }}:v$tag"
+          docker tag image $fqimagetag
+          docker push $fqimagetag
+        done

@@ -68,10 +68,10 @@ go get -u github.com/dpb587/gget
 
 ## Docker Usage
 
-The `dpb587/gget` image can be used as a build stage for finding and downloading assets for use in a subsequent stage.
+The `gget` image can be used as a build stage for finding and downloading assets for use in a subsequent stage.
 
 ```
-FROM dpb587/gget as gget
+FROM docker.pkg.github.com/dpb587/private/gget as gget
 RUN gget --executable github.com/cloudfoundry/bosh-cli bosh=bosh-cli-*-linux-amd64
 RUN gget --executable github.com/cloudfoundry/bosh-bootloader bbl=bbl-*_linux_x86-64
 RUN gget --stdout github.com/pivotal-cf/om om-linux-*.tar.gz | tar -xzf- om
