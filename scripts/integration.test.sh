@@ -18,7 +18,7 @@ EOF
 
 rm *
 
-../gget --exec github.com/stedolan/jq@jq-1.6 my-custom-name=jq-osx-amd64
+../gget --executable github.com/stedolan/jq@jq-1.6 my-custom-name=jq-osx-amd64
 
 diff <( shasum * ) - <<EOF
 8673400d1886ed051b40fe8dee09d89237936502  my-custom-name

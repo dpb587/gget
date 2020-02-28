@@ -14,7 +14,7 @@ With notable support for:
  * user-uploaded release assets, source files, and `git export` archives;
  * tag, branch, and commit-based references;
  * convenience methods for renaming files, marking executable, and verifying checksums; and
- * [GitHub](https://github.com/) repositories (with [Bitbucket](https://bitbucket.org/) and [GitLab](https://about.gitlab.com/) coming soon).
+ * [GitHub](https://github.com/) repositories (with hopes of adding [Bitbucket](https://bitbucket.org/) and [GitLab](https://about.gitlab.com/)).
 
 ## Command Line Usage
 
@@ -34,9 +34,9 @@ Use the `--exclude=` option to avoid files with overlapping matches.
 
     gget github.com/gohugoio/hugo --exclude='*extended*' 'hugo_*_Linux-ARM.deb'
 
-Prefix remote file names with a custom local file path to use an alternative download location. Use the `--exec` option to mark a download as executable.
+Prefix remote file names with a custom local file path to use an alternative download location. Use the `--executable` option to mark a download as executable.
 
-    gget --exec github.com/stedolan/jq /usr/local/bin/jq=jq-osx-amd64
+    gget --executable github.com/stedolan/jq /usr/local/bin/jq=jq-osx-amd64
 
 Use the `--type=` option to download files other than user-uploaded release assets. Use `archive` to access zip or tarball archives of the repository files.
 
@@ -72,8 +72,8 @@ The `dpb587/gget` image can be used as a build stage for finding and downloading
 
 ```
 FROM dpb587/gget as gget
-RUN gget --exec github.com/cloudfoundry/bosh-cli bosh=bosh-cli-*-linux-amd64
-RUN gget --exec github.com/cloudfoundry/bosh-bootloader bbl=bbl-*_linux_x86-64
+RUN gget --executable github.com/cloudfoundry/bosh-cli bosh=bosh-cli-*-linux-amd64
+RUN gget --executable github.com/cloudfoundry/bosh-bootloader bbl=bbl-*_linux_x86-64
 RUN gget --stdout github.com/pivotal-cf/om om-linux-*.tar.gz | tar -xzf- om
 
 FROM ubuntu

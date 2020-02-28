@@ -28,7 +28,7 @@ type DownloadOptions struct {
 	ShowResources bool `long:"show-resources" description:"list matched resources instead of downloading"`
 
 	CD         string            `long:"cd" description:"change to directory before writing files"`
-	Executable []ResourceNameOpt `long:"exec" description:"apply executable permissions to downloads" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Executable []ResourceNameOpt `long:"executable" description:"apply executable permissions to downloads" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
 	Stdout     bool              `long:"stdout" description:"write file contents to stdout rather than disk"`
 }
 
