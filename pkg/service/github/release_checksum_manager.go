@@ -44,7 +44,7 @@ func (cm *ReleaseChecksumManager) requireOptimistic() error {
 		return nil
 	}
 
-	manager := parser.ParseReleaseNotes(cm.release.GetBody())
+	manager := parser.ParseMarkdown(cm.release.GetBody())
 	if manager == nil {
 		manager = checksum.NewInMemoryManager()
 	}
