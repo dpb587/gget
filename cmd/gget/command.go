@@ -77,6 +77,10 @@ func (c *Command) applySettings() {
 func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
+	if c.Args.Ref.Repository == "" {
+		return fmt.Errorf("missing argument: repository")
+	}
+
 	ctx := context.Background()
 	svc := github.NewService(c.Runtime.Logger(), &github.ClientFactory{RoundTripFactory: c.Runtime.RoundTripLogger})
 
