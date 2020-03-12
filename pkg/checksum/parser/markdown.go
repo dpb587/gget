@@ -2,11 +2,7 @@ package parser
 
 import "github.com/dpb587/gget/pkg/checksum"
 
-func ParseMarkdown(content string) *checksum.InMemoryManager {
-	m := checksum.NewInMemoryManager()
-
+func ImportMarkdown(m checksum.ManagerSetter, content string) {
 	ImportMarkdownCodefence(m, content)
 	ImportMarkdownCodeindent(m, content)
-
-	return m
 }

@@ -2,7 +2,6 @@ package parser
 
 import (
 	"regexp"
-	"strings"
 
 	"github.com/dpb587/gget/pkg/checksum"
 )
@@ -17,24 +16,6 @@ func ImportMarkdownCodefence(m checksum.ManagerSetter, content string) {
 	}
 
 	for _, contentSubmatch := range contentSubmatches {
-		checksums := strings.Split(strings.TrimSpace(contentSubmatch[1]), "\n")
-
-		for _, checksumLine := range checksums {
-			checksumSplit := strings.Fields(strings.TrimSpace(checksumLine))
-			if len(checksumSplit) != 2 {
-				continue
-			}
-
-			if len(checksumSplit[0]) < 16 {
-				continue
-			}
-
-			checksum, err := checksum.GuessChecksum(checksumSplit[0])
-			if err != nil {
-				continue
-			}
-
-			m.SetChecksum(checksumSplit[1], checksum)
-		}
+		ImportLines(m, contentSubmatch[1])
 	}
 }

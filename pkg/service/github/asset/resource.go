@@ -43,6 +43,10 @@ func (r *Resource) GetSize() int64 {
 }
 
 func (r *Resource) GetDownloaderSteps(ctx context.Context) ([]downloader.Step, error) {
+	if r.checksumManager == nil {
+		return nil, nil
+	}
+
 	cs, found, err := r.checksumManager.GetChecksum(ctx, r.asset.GetName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting checksum of %s", r.asset.GetName())
@@ -65,10 +69,6 @@ func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
 	remoteHandle, redirectURL, err := r.client.Repositories.DownloadReleaseAsset(ctx, r.releaseOwner, r.releaseRepository, r.asset.GetID())
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting asset")
-	}
-
-	if remoteHandle != nil {
-		defer remoteHandle.Close()
 	}
 
 	if redirectURL != "" {

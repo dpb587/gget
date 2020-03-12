@@ -187,7 +187,7 @@ func (s Service) resolveTagReference(ctx context.Context, client *github.Client,
 			repo:            repo,
 			release:         release,
 			targetRef:       res,
-			checksumManager: NewReleaseChecksumManager(client, release),
+			checksumManager: NewReleaseChecksumManager(client, repo.GetOwner().GetLogin(), repo.GetName(), release),
 		}
 	}
 
