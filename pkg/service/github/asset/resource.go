@@ -7,8 +7,9 @@ import (
 	"net/http"
 
 	"github.com/dpb587/gget/pkg/checksum"
-	"github.com/dpb587/gget/pkg/downloader"
 	"github.com/dpb587/gget/pkg/service"
+	"github.com/dpb587/gget/pkg/transfer"
+	"github.com/dpb587/gget/pkg/transfer/step"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
@@ -22,7 +23,7 @@ type Resource struct {
 }
 
 var _ service.ResolvedResource = &Resource{}
-var _ downloader.StepProvider = &Resource{}
+var _ transfer.StepProvider = &Resource{}
 
 func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset, checksumManager checksum.Manager) *Resource {
 	return &Resource{
@@ -42,7 +43,7 @@ func (r *Resource) GetSize() int64 {
 	return int64(r.asset.GetSize())
 }
 
-func (r *Resource) GetDownloaderSteps(ctx context.Context) ([]downloader.Step, error) {
+func (r *Resource) GetTransferSteps(ctx context.Context) ([]transfer.Step, error) {
 	if r.checksumManager == nil {
 		return nil, nil
 	}
@@ -54,8 +55,8 @@ func (r *Resource) GetDownloaderSteps(ctx context.Context) ([]downloader.Step, e
 		return nil, nil
 	}
 
-	res := []downloader.Step{
-		&downloader.DownloadHashVerifier{
+	res := []transfer.Step{
+		&step.VerifyChecksum{
 			Algo:     cs.Type,
 			Expected: cs.Bytes,
 			Actual:   cs.Hasher(),

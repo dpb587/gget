@@ -1,4 +1,4 @@
-package downloader
+package transfer
 
 import (
 	"context"
@@ -11,26 +11,26 @@ import (
 	"github.com/vbauerster/mpb/v4/decor"
 )
 
-type Workflow struct {
-	downloader DownloadAsset
-	steps      []Step
+type Transfer struct {
+	origin DownloadAsset
+	steps  []Step
 
 	pb   *mpb.Progress
 	bars []*mpb.Bar
 }
 
-func NewWorkflow(downloader DownloadAsset, steps ...Step) *Workflow {
-	return &Workflow{
-		downloader: downloader,
-		steps:      steps,
+func NewTransfer(origin DownloadAsset, steps []Step) *Transfer {
+	return &Transfer{
+		origin: origin,
+		steps:  steps,
 	}
 }
 
-func (w *Workflow) GetSubject() string {
-	return w.downloader.GetName()
+func (w *Transfer) GetSubject() string {
+	return w.origin.GetName()
 }
 
-func (w *Workflow) Prepare(pb *mpb.Progress) {
+func (w *Transfer) Prepare(pb *mpb.Progress) {
 	w.pb = pb
 	w.bars = make([]*mpb.Bar, len(w.steps)+4)
 
@@ -44,7 +44,7 @@ func (w *Workflow) Prepare(pb *mpb.Progress) {
 		decor.WC{W: 10, C: decor.DidentRight},
 	))
 
-	downloadSize := w.downloader.GetSize()
+	downloadSize := w.origin.GetSize()
 	downloadDecor := decor.NewPercentage("downloading (%d)")
 	if downloadSize == 0 {
 		downloadDecor = decor.EwmaSpeed(decor.UnitKB, "downloading (%d)", 40)
@@ -73,7 +73,7 @@ func (w *Workflow) Prepare(pb *mpb.Progress) {
 	))
 }
 
-func (w Workflow) Execute(ctx context.Context) error {
+func (w Transfer) Execute(ctx context.Context) error {
 	{ // waiting
 		w.bars[0].SetTotal(1, true)
 	}
@@ -83,7 +83,7 @@ func (w Workflow) Execute(ctx context.Context) error {
 	{ // connecting
 		var err error
 
-		assetHandle, err = w.downloader.Open(ctx)
+		assetHandle, err = w.origin.Open(ctx)
 		if err != nil {
 			w.bars[1].Abort(false)
 
@@ -105,21 +105,12 @@ func (w Workflow) Execute(ctx context.Context) error {
 			var writers []io.Writer
 
 			for _, step := range w.steps {
-				ssw, ok := step.(StepWriter)
+				writer, ok := step.(io.Writer)
 				if !ok {
 					continue
 				}
 
-				sw, err := ssw.GetWriter()
-				if err != nil {
-					w.bars[2].Abort(false)
-
-					return errors.Wrap(err, "getting step writer")
-				} else if sw == nil {
-					continue
-				}
-
-				writers = append(writers, sw)
+				writers = append(writers, writer)
 			}
 
 			if len(writers) == 0 {
@@ -138,7 +129,7 @@ func (w Workflow) Execute(ctx context.Context) error {
 			return errors.Wrap(err, "downloading")
 		}
 
-		w.bars[2].SetTotal(int64(w.downloader.GetSize()), true)
+		w.bars[2].SetTotal(int64(w.origin.GetSize()), true)
 	}
 
 	var results []string
@@ -185,7 +176,7 @@ func (w Workflow) Execute(ctx context.Context) error {
 	return nil
 }
 
-func (w Workflow) newBar(pb *mpb.Progress, pbp *mpb.Bar, spinner string, count int64, msg decor.Decorator) *mpb.Bar {
+func (w Transfer) newBar(pb *mpb.Progress, pbp *mpb.Bar, spinner string, count int64, msg decor.Decorator) *mpb.Bar {
 	var spinnerd decor.Decorator
 
 	switch spinner {
@@ -201,7 +192,7 @@ func (w Workflow) newBar(pb *mpb.Progress, pbp *mpb.Bar, spinner string, count i
 		)
 	}
 
-	subject := w.downloader.GetName()
+	subject := w.origin.GetName()
 
 	return pb.AddBar(
 		count,

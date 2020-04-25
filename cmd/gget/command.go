@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/dpb587/gget/pkg/downloader"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/service/github"
+	"github.com/dpb587/gget/pkg/transfer"
+	"github.com/dpb587/gget/pkg/transfer/transferutil"
 	"github.com/pkg/errors"
-	"github.com/tidwall/limiter"
-	"github.com/vbauerster/mpb/v4"
 )
 
 type ResourceOptions struct {
@@ -140,60 +139,27 @@ func (c *Command) Execute(_ []string) error {
 		return nil
 	}
 
-	var downloads []*downloader.Workflow
+	var transfers []*transfer.Transfer
 
 	for localPath, resource := range resourceMap {
-		var steps []downloader.Step
-
-		if localPath == "-" {
-			steps = append(
-				steps,
-				&downloader.DownloadWriterInstaller{
-					Writer: os.Stdout,
-				},
-			)
-		} else {
-			steps = append(
-				steps,
-				&downloader.DownloadTmpfileInstaller{
-					Tmpdir: filepath.Dir(localPath),
-				},
-			)
-		}
-
-		if ds, ok := resource.(downloader.StepProvider); ok {
-			extraSteps, err := ds.GetDownloaderSteps(ctx)
-			if err != nil {
-				return errors.Wrap(err, "getting download steps")
-			}
-
-			steps = append(steps, extraSteps...)
-		}
-
-		if localPath != "-" {
-			if !c.Executable.Match(resource.GetName()).IsEmpty() {
-				steps = append(
-					steps,
-					&downloader.DownloadExecutableInstaller{},
-				)
-			}
-
-			steps = append(
-				steps,
-				&downloader.DownloadRenameInstaller{
-					Target: localPath,
-				},
-			)
-		}
-
-		downloads = append(
-			downloads,
-			downloader.NewWorkflow(resource, steps...),
+		xfer, err := transferutil.BuildTransfer(
+			ctx,
+			resource,
+			localPath,
+			transferutil.TransferOptions{
+				Executable: !c.Executable.Match(resource.GetName()).IsEmpty(),
+			},
 		)
+		if err != nil {
+			return errors.Wrapf(err, "preparing transfer of %s", resource.GetName())
+		}
+
+		transfers = append(transfers, xfer)
 	}
 
-	sort.Slice(downloads, func(i, j int) bool {
-		return downloads[i].GetSubject() < downloads[j].GetSubject()
+	sort.Slice(transfers, func(i, j int) bool {
+		// TODO first order by user arg order
+		return transfers[i].GetSubject() < transfers[j].GetSubject()
 	})
 
 	var pbO io.Writer = os.Stderr
@@ -202,29 +168,7 @@ func (c *Command) Execute(_ []string) error {
 		pbO = ioutil.Discard
 	}
 
-	pb := mpb.New(mpb.WithWidth(1), mpb.WithOutput(pbO))
+	batch := transfer.NewBatch(transfers, c.Runtime.Parallel, pbO)
 
-	for _, d := range downloads {
-		d.Prepare(pb)
-	}
-
-	l := limiter.New(c.Runtime.Parallel)
-
-	for _, d := range downloads {
-		d := d
-		go func() {
-			l.Begin()
-			defer l.End()
-
-			err := d.Execute(ctx)
-			if err != nil {
-				// TODO concurrency
-				panic(errors.Wrapf(err, "downloading %s", d.GetSubject()))
-			}
-		}()
-	}
-
-	pb.Wait()
-
-	return nil
+	return batch.Transfer(ctx)
 }

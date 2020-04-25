@@ -23,6 +23,7 @@ rm *
 diff <( shasum * ) - <<EOF
 8673400d1886ed051b40fe8dee09d89237936502  my-custom-name
 EOF
+[ -e my-custom-name ]
 
 rm *
 

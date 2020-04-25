@@ -1,24 +1,25 @@
-package downloader
+package step
 
 import (
 	"context"
 	"os"
 
+	"github.com/dpb587/gget/pkg/transfer"
 	"github.com/pkg/errors"
 	"github.com/vbauerster/mpb/v4/decor"
 )
 
-type DownloadRenameInstaller struct {
+type Rename struct {
 	Target string
 }
 
-var _ Step = &DownloadHashVerifier{}
+var _ transfer.Step = &Rename{}
 
-func (dpi DownloadRenameInstaller) GetProgressParams() (int64, decor.Decorator) {
+func (dpi Rename) GetProgressParams() (int64, decor.Decorator) {
 	return 0, nil
 }
 
-func (dpi DownloadRenameInstaller) Execute(_ context.Context, state *State) error {
+func (dpi Rename) Execute(_ context.Context, state *transfer.State) error {
 	err := os.Rename(state.LocalFilePath, dpi.Target)
 	if err != nil {
 		return errors.Wrap(err, "renaming")
