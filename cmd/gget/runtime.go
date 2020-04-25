@@ -13,8 +13,8 @@ type Runtime struct {
 	Verbose  []bool `long:"verbose" short:"v" description:"increase logging verbosity"`
 	Parallel int    `long:"parallel" description:"maximum number of parallel operations" default:"3"`
 
-	Help    bool `long:"help" short:"h" description:"show documentation of this tool"`
-	Version bool `long:"version" description:"show version of this tool"`
+	Help    bool `long:"help" short:"h" description:"show documentation of this command"`
+	Version bool `long:"version" description:"show version of this command"`
 
 	app    app.Version
 	logger *logrus.Logger

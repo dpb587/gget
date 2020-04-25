@@ -7,15 +7,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ResourceNameOpt string
+type ResourceMatcher string
 
-func (o *ResourceNameOpt) Match(remote string) bool {
+func (o *ResourceMatcher) Match(remote string) bool {
 	match, _ := filepath.Match(string(*o), remote)
 
 	return match
 }
 
-func (o *ResourceNameOpt) Validate() error {
+func (o *ResourceMatcher) Validate() error {
 	_, err := filepath.Match(string(*o), "test")
 	if err != nil {
 		return errors.Wrap(err, "expected valid Resource matcher")
@@ -24,19 +24,39 @@ func (o *ResourceNameOpt) Validate() error {
 	return nil
 }
 
-type ResourcePathOpt struct {
-	RemoteMatch ResourceNameOpt
+type ResourceMatchers []ResourceMatcher
+
+func (o ResourceMatchers) Match(remote string) ResourceMatchers {
+	var res ResourceMatchers
+
+	for _, m := range o {
+		if !m.Match(remote) {
+			continue
+		}
+
+		res = append(res, m)
+	}
+
+	return res
+}
+
+func (o ResourceMatchers) IsEmpty() bool {
+	return len(o) == 0
+}
+
+type ResourceTransferSpec struct {
+	RemoteMatch ResourceMatcher
 	LocalPath   string
 }
 
-func (o *ResourcePathOpt) Resolve(remote string) (ResourcePathOpt, bool) {
+func (o *ResourceTransferSpec) Resolve(remote string) (ResourceTransferSpec, bool) {
 	match := o.RemoteMatch.Match(remote)
 	if !match {
-		return ResourcePathOpt{}, false
+		return ResourceTransferSpec{}, false
 	}
 
-	res := ResourcePathOpt{
-		RemoteMatch: ResourceNameOpt(remote),
+	res := ResourceTransferSpec{
+		RemoteMatch: ResourceMatcher(remote),
 		LocalPath:   o.LocalPath,
 	}
 
@@ -49,14 +69,14 @@ func (o *ResourcePathOpt) Resolve(remote string) (ResourcePathOpt, bool) {
 	return res, true
 }
 
-func (o *ResourcePathOpt) UnmarshalFlag(data string) error {
+func (o *ResourceTransferSpec) UnmarshalFlag(data string) error {
 	dataSplit := strings.SplitN(data, "=", 2)
 
 	if len(dataSplit) == 2 {
-		o.RemoteMatch = ResourceNameOpt(dataSplit[1])
+		o.RemoteMatch = ResourceMatcher(dataSplit[1])
 		o.LocalPath = dataSplit[0]
 	} else {
-		o.RemoteMatch = ResourceNameOpt(dataSplit[0])
+		o.RemoteMatch = ResourceMatcher(dataSplit[0])
 		o.LocalPath = ""
 	}
 

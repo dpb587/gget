@@ -19,17 +19,17 @@ import (
 
 type ResourceOptions struct {
 	Type          service.ResourceType `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
-	IgnoreMissing []ResourceNameOpt    `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Exclude       []ResourceNameOpt    `long:"exclude" description:"exclude resource(s) from download (glob-friendly)" value-name:"RESOURCE"`
+	IgnoreMissing ResourceMatchers     `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (glob-friendly; multiple)" value-name:"RESOURCE"`
 }
 
 type DownloadOptions struct {
 	ShowRef       bool `long:"show-ref" description:"list matched repository ref instead of downloading"`
 	ShowResources bool `long:"show-resources" description:"list matched resources instead of downloading"`
 
-	CD         string            `long:"cd" description:"change to directory before writing files"`
-	Executable []ResourceNameOpt `long:"executable" description:"apply executable permissions to downloads" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Stdout     bool              `long:"stdout" description:"write file contents to stdout rather than disk"`
+	CD         string           `long:"cd" description:"change to directory before writing files"`
+	Executable ResourceMatchers `long:"executable" description:"apply executable permissions to downloads (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	Stdout     bool             `long:"stdout" description:"write file contents to stdout rather than disk"`
 }
 
 type Command struct {
@@ -40,15 +40,15 @@ type Command struct {
 }
 
 type CommandArgs struct {
-	Ref       RefOpt            `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"release reference"`
-	Resources []ResourcePathOpt `positional-arg-name:"[LOCAL-PATH=]RESOURCE" description:"resource name(s) to download (glob-friendly)" optional:"true"`
+	Ref       RefOpt                 `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"release reference"`
+	Resources []ResourceTransferSpec `positional-arg-name:"[LOCAL-PATH=]RESOURCE" description:"resource name(s) to download (glob-friendly)" optional:"true"`
 }
 
 func (c *Command) applySettings() {
 	if len(c.Args.Resources) == 0 {
-		c.Args.Resources = []ResourcePathOpt{
+		c.Args.Resources = []ResourceTransferSpec{
 			{
-				RemoteMatch: ResourceNameOpt("*"),
+				RemoteMatch: ResourceMatcher("*"),
 			},
 		}
 	}
@@ -101,39 +101,22 @@ func (c *Command) Execute(_ []string) error {
 	}
 
 	resourceMap := map[string]service.ResolvedResource{}
-	userResourceMatches := make([]bool, len(c.Args.Resources))
 
-	for userResourceIdx, userResource := range c.Args.Resources {
+	for _, userResource := range c.Args.Resources {
 		candidateResources, err := ref.ResolveResource(ctx, c.Type, service.Resource(string(userResource.RemoteMatch)))
 		if err != nil {
 			return errors.Wrapf(err, "resolving resource %s", string(userResource.RemoteMatch))
 		} else if len(candidateResources) == 0 {
-			for _, ignoreMissing := range c.IgnoreMissing {
-				if ignoreMissing.Match(string(userResource.RemoteMatch)) {
-					userResourceMatches[userResourceIdx] = true
-
-					break
-				}
+			if !c.IgnoreMissing.Match(string(userResource.RemoteMatch)).IsEmpty() {
+				continue
 			}
 
-			continue
+			return errors.Wrap(fmt.Errorf("no resource matched: %s", userResource.RemoteMatch), "expected matching resources")
 		}
 
 		for _, candidate := range candidateResources {
-			{ // is it excluded?
-				var excluded bool
-
-				for _, exclude := range c.Exclude {
-					if exclude.Match(candidate.GetName()) {
-						excluded = true
-
-						break
-					}
-				}
-
-				if excluded {
-					continue
-				}
+			if !c.Exclude.Match(candidate.GetName()).IsEmpty() {
+				continue
 			}
 
 			resolved, matched := userResource.Resolve(candidate.GetName())
@@ -145,18 +128,7 @@ func (c *Command) Execute(_ []string) error {
 				return fmt.Errorf("target file already specified: %s", resolved.LocalPath)
 			}
 
-			userResourceMatches[userResourceIdx] = true
 			resourceMap[resolved.LocalPath] = candidate
-		}
-	}
-
-	{ // finally, did we find everything the user asked for?
-		for userResourceIdx, userResourceMatched := range userResourceMatches {
-			if userResourceMatched {
-				continue
-			}
-
-			return errors.Wrap(fmt.Errorf("no resource matched: %s", c.Args.Resources[userResourceIdx].RemoteMatch), "expected matching resources")
 		}
 	}
 
@@ -199,11 +171,7 @@ func (c *Command) Execute(_ []string) error {
 		}
 
 		if localPath != "-" {
-			for _, ResourceNameOpt := range c.Executable {
-				if !ResourceNameOpt.Match(resource.GetName()) {
-					continue
-				}
-
+			if !c.Executable.Match(resource.GetName()).IsEmpty() {
 				steps = append(
 					steps,
 					&downloader.DownloadExecutableInstaller{},
