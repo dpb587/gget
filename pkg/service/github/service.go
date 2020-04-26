@@ -34,69 +34,61 @@ func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.Resol
 		return nil, errors.Wrap(err, "building client")
 	}
 
-	repo, _, err := client.Repositories.Get(ctx, ref.Owner, ref.Repository)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting repo")
-	}
+	var cachedRelease *github.RepositoryRelease
 
 	if ref.Ref == "" {
-		release, _, err := client.Repositories.GetLatestRelease(ctx, repo.GetOwner().GetLogin(), repo.GetName())
+		release, _, err := client.Repositories.GetLatestRelease(ctx, ref.Owner, ref.Repository)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting latest release")
 		}
 
-		// TODO avoid dup api call
 		ref.Ref = release.GetTagName()
-		if ref.Ref == "" {
-			panic("logical inconsistency")
-		}
-
-		return s.ResolveRef(ctx, ref)
+		cachedRelease = release
 	}
 
 	{ // tag
-		gitref, resp, err := client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("tags", ref.Ref))
+		gitref, resp, err := client.Git.GetRefs(ctx, ref.Owner, ref.Repository, path.Join("tags", ref.Ref))
 		if resp.StatusCode == http.StatusNotFound {
 			// oh well
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting tag resolution")
 		} else if len(gitref) == 1 {
-			return s.resolveTagReference(ctx, client, repo, gitref[0])
+			return s.resolveTagReference(ctx, client, ref, gitref[0], cachedRelease)
 		}
 	}
 
 	{ // head
-		gitref, resp, err := client.Git.GetRefs(ctx, repo.GetOwner().GetLogin(), repo.GetName(), path.Join("heads", ref.Ref))
+		gitref, resp, err := client.Git.GetRefs(ctx, ref.Owner, ref.Repository, path.Join("heads", ref.Ref))
 		if resp.StatusCode == http.StatusNotFound {
 			// oh well
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting branch resolution")
 		} else if len(gitref) == 1 {
-			return s.resolveHeadReference(ctx, client, repo, gitref[0])
+			return s.resolveHeadReference(ctx, client, ref, gitref[0])
 		}
 	}
 
 	if gitutil.PotentialCommitRE.MatchString(ref.Ref) { // commit
 		// client.Git.GetCommit does not resolve partial commits
-		commitref, resp, err := client.Repositories.GetCommit(ctx, repo.GetOwner().GetLogin(), repo.GetName(), ref.Ref)
+		commitref, resp, err := client.Repositories.GetCommit(ctx, ref.Owner, ref.Repository, ref.Ref)
 		if resp.StatusCode == http.StatusNotFound {
 			return nil, nil
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting commit resolution")
 		}
 
-		return s.resolveCommitReference(ctx, client, repo, commitref.GetSHA())
+		return s.resolveCommitReference(ctx, client, ref, commitref.GetSHA())
 	}
 
 	return nil, fmt.Errorf("unable to resolve as tag, branch, nor commit: %s", ref.Ref)
 }
 
-func (s Service) resolveCommitReference(ctx context.Context, client *github.Client, repo *github.Repository, commitSHA string) (service.ResolvedRef, error) {
+func (s Service) resolveCommitReference(ctx context.Context, client *github.Client, ref service.Ref, commitSHA string) (service.ResolvedRef, error) {
 	res := &CommitRef{
 		client:          client,
-		repo:            repo,
+		ref:             ref,
 		commit:          commitSHA,
-		archiveFileBase: fmt.Sprintf("%s-%s", repo.GetName(), commitSHA[0:9]),
+		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, commitSHA[0:9]),
 		RefMetadataService: service.RefMetadataService{
 			Metadata: []service.RefMetadata{
 				{
@@ -110,14 +102,14 @@ func (s Service) resolveCommitReference(ctx context.Context, client *github.Clie
 	return res, nil
 }
 
-func (s Service) resolveHeadReference(ctx context.Context, client *github.Client, repo *github.Repository, headRef *github.Reference) (service.ResolvedRef, error) {
+func (s Service) resolveHeadReference(ctx context.Context, client *github.Client, ref service.Ref, headRef *github.Reference) (service.ResolvedRef, error) {
 	branchName := strings.TrimPrefix(headRef.GetRef(), "refs/heads/")
 
 	res := &CommitRef{
 		client:          client,
-		repo:            repo,
+		ref:             ref,
 		commit:          headRef.Object.GetSHA(),
-		archiveFileBase: fmt.Sprintf("%s-%s", repo.GetName(), path.Base(branchName)),
+		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, path.Base(branchName)),
 		RefMetadataService: service.RefMetadataService{
 			Metadata: []service.RefMetadata{
 				{
@@ -135,13 +127,13 @@ func (s Service) resolveHeadReference(ctx context.Context, client *github.Client
 	return res, nil
 }
 
-func (s Service) resolveTagReference(ctx context.Context, client *github.Client, repo *github.Repository, tagRef *github.Reference) (service.ResolvedRef, error) {
+func (s Service) resolveTagReference(ctx context.Context, client *github.Client, ref service.Ref, tagRef *github.Reference, cachedRelease *github.RepositoryRelease) (service.ResolvedRef, error) {
 	var tagObj *github.Tag
 
 	if tagRef.Object.GetType() == "tag" { // annotated tag
 		var err error
 
-		tagObj, _, err = client.Git.GetTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), tagRef.Object.GetSHA())
+		tagObj, _, err = client.Git.GetTag(ctx, ref.Owner, ref.Repository, tagRef.Object.GetSHA())
 		if err != nil {
 			return nil, errors.Wrap(err, "getting tag of annotated tag")
 		}
@@ -159,9 +151,9 @@ func (s Service) resolveTagReference(ctx context.Context, client *github.Client,
 
 	var res service.ResolvedRef = &CommitRef{
 		client:          client,
-		repo:            repo,
+		ref:             ref,
 		commit:          tagObj.Object.GetSHA(),
-		archiveFileBase: fmt.Sprintf("%s-%s", repo.GetName(), tagName),
+		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, tagName),
 		RefMetadataService: service.RefMetadataService{
 			Metadata: []service.RefMetadata{
 				{
@@ -176,18 +168,29 @@ func (s Service) resolveTagReference(ctx context.Context, client *github.Client,
 		},
 	}
 
-	release, resp, err := client.Repositories.GetReleaseByTag(ctx, repo.GetOwner().GetLogin(), repo.GetName(), tagName)
-	if resp.StatusCode == http.StatusNotFound {
-		// oh well
-	} else if err != nil {
-		return nil, errors.Wrap(err, "getting release by tag")
-	} else if release != nil {
+	var release *github.RepositoryRelease
+
+	if cachedRelease != nil && cachedRelease.GetTagName() == tagName {
+		release = cachedRelease
+	} else {
+		var resp *github.Response
+		var err error
+
+		release, resp, err = client.Repositories.GetReleaseByTag(ctx, ref.Owner, ref.Repository, tagName)
+		if resp.StatusCode == http.StatusNotFound {
+			// oh well
+		} else if err != nil {
+			return nil, errors.Wrap(err, "getting release by tag")
+		}
+	}
+
+	if release != nil {
 		res = &ReleaseRef{
 			client:          client,
-			repo:            repo,
+			ref:             ref,
 			release:         release,
 			targetRef:       res,
-			checksumManager: NewReleaseChecksumManager(client, repo.GetOwner().GetLogin(), repo.GetName(), release),
+			checksumManager: NewReleaseChecksumManager(client, ref.Owner, ref.Repository, release),
 		}
 	}
 

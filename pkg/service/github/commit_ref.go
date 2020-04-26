@@ -16,7 +16,7 @@ type CommitRef struct {
 	service.RefMetadataService
 
 	client *github.Client
-	repo   *github.Repository
+	ref    service.Ref
 	commit string
 
 	archiveFileBase string
@@ -52,8 +52,8 @@ func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service
 			res,
 			archive.NewResource(
 				r.client,
-				r.repo.GetOwner().GetLogin(),
-				r.repo.GetName(),
+				r.ref.Owner,
+				r.ref.Repository,
 				r.commit,
 				candidate,
 			),
@@ -67,7 +67,7 @@ func (r *CommitRef) resolveBlobResource(ctx context.Context, resource service.Re
 	var res []service.ResolvedResource
 
 	// get the full tree
-	tree, _, err := r.client.Git.GetTree(ctx, r.repo.GetOwner().GetLogin(), r.repo.GetName(), r.commit, true)
+	tree, _, err := r.client.Git.GetTree(ctx, r.ref.Owner, r.ref.Repository, r.commit, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting commit tree")
 	}
@@ -77,7 +77,7 @@ func (r *CommitRef) resolveBlobResource(ctx context.Context, resource service.Re
 			continue
 		}
 
-		res = append(res, blob.NewResource(r.client, r.repo.GetOwner().GetLogin(), r.repo.GetName(), candidate))
+		res = append(res, blob.NewResource(r.client, r.ref.Owner, r.ref.Repository, candidate))
 	}
 
 	return res, nil

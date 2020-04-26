@@ -12,7 +12,7 @@ import (
 
 type ReleaseRef struct {
 	client    *github.Client
-	repo      *github.Repository
+	ref       service.Ref
 	release   *github.RepositoryRelease
 	targetRef service.ResolvedRef
 
@@ -43,7 +43,7 @@ func (r *ReleaseRef) resolveAssetResource(ctx context.Context, resource service.
 
 		res = append(
 			res,
-			asset.NewResource(r.client, r.repo.GetOwner().GetLogin(), r.repo.GetName(), candidate, r.checksumManager),
+			asset.NewResource(r.client, r.ref.Owner, r.ref.Repository, candidate, r.checksumManager),
 		)
 	}
 
