@@ -39,6 +39,8 @@ func main() {
 		app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
 
 		return
+	} else if err != nil {
+		fatal(err)
 	}
 
 	if err = cmd.Execute(nil); err != nil {

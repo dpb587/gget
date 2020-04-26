@@ -68,11 +68,15 @@ type roundTripLogger struct {
 }
 
 func (rtl roundTripLogger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	rtl.l.Debugf("http: request: %s %s", req.Method, req.URL.String())
+	rtl.l.Debugf("http: %s %s", req.Method, req.URL.String())
 
 	res, err := rtl.rt.RoundTrip(req)
 
-	rtl.l.Infof("http: response: %s (request: %s %s)", res.Status, req.Method, req.URL.String())
+	rtl.l.Infof("http: %s %s (status: %s)", req.Method, req.URL.String(), res.Status)
+
+	if v := res.Header.Get("X-RateLimit-Remaining"); v != "" {
+		rtl.l.Debugf("http: %s %s (x-ratelimit-remaining: %s)", req.Method, req.URL.String(), v)
+	}
 
 	return res, err
 }

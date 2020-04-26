@@ -110,7 +110,7 @@ func (c *Command) Execute(_ []string) error {
 				continue
 			}
 
-			return errors.Wrap(fmt.Errorf("no resource matched: %s", userResource.RemoteMatch), "expected matching resources")
+			return fmt.Errorf("no resource matched: %s", userResource.RemoteMatch)
 		}
 
 		for _, candidate := range candidateResources {
