@@ -18,7 +18,7 @@ import (
 type ResourceOptions struct {
 	Type          service.ResourceType `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
 	IgnoreMissing ResourceMatchers     `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (glob-friendly; multiple)" value-name:"RESOURCE"`
+	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (glob-friendly; multiple)" value-name:"[RESOURCE]"`
 }
 
 type DownloadOptions struct {

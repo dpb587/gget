@@ -1,6 +1,6 @@
 # gget
 
-A small utility for getting files from git repositories.
+A small utility for downloading files from git repositories.
 
 You may find this useful for:
 
@@ -11,7 +11,7 @@ You may find this useful for:
 With notable support for:
 
  * public and private repositories;
- * user-uploaded release assets, source files, and `git export` archives;
+ * user-managed release assets, source files, and `git export` archives;
  * tag, branch, and commit-based references;
  * convenience methods for renaming files, marking executable, and verifying checksums; and
  * [GitHub](https://github.com/) and [GitLab](https://gitlab.com/) repositories (with hopes of adding [Bitbucket](https://bitbucket.org/)).
@@ -48,7 +48,32 @@ Use the `blob` type to download individual repository files. Branch and commit r
 
 Use `--help` to see all options and learn more about advanced usage.
 
-    gget --help
+    Usage:
+      gget HOST/OWNER/REPOSITORY[@REF] [LOCAL-PATH=]RESOURCE...
+
+    Runtime Options:
+      -q, --quiet                           suppress runtime status reporting
+      -v, --verbose                         increase logging verbosity
+          --parallel=                       maximum number of parallel operations (default: 3)
+          --service=                        specific git service to use (i.e. github, gitlab; default: auto-detect)
+      -h, --help                            show documentation of this command
+          --version                         show version of this command
+
+    Resource Options:
+          --type=                           type of resource to get (e.g. asset, archive, blob) (default: asset)
+          --ignore-missing=[RESOURCE]       if a resource is not found, skip it rather than failing (glob-friendly; multiple)
+          --exclude=[RESOURCE]              exclude resource(s) from download (glob-friendly; multiple)
+
+    Download Options:
+          --show-ref                        list matched repository ref instead of downloading
+          --show-resources                  list matched resources instead of downloading
+          --cd=                             change to directory before writing files
+          --executable=[RESOURCE]           apply executable permissions to downloads (glob-friendly; multiple)
+          --stdout                          write file contents to stdout rather than disk
+
+    Arguments:
+      HOST/OWNER/REPOSITORY[@REF]:          release reference
+      [LOCAL-PATH=]RESOURCE:                resource name(s) to download (glob-friendly)
 
 ### Installation
 
@@ -68,7 +93,7 @@ go get -u github.com/dpb587/gget
 
 ## Docker Usage
 
-The `gget` image can be used as a build stage for finding and downloading assets for use in a subsequent stage.
+The `gget` image can be used as a build stage to download assets for a later stage.
 
 ```
 FROM docker.pkg.github.com/dpb587/gget/gget as gget
@@ -90,7 +115,7 @@ The following services are supported through their APIs:
 
 ## Alternatives
 
- * `wget`/`curl` -- if you want to manually maintain download URLs and private signing
+ * `wget`/`curl` -- if you want to manually maintain version download URLs and private signing
  * [`hub release download ...`](https://github.com/github/hub) -- if you already have `git` configured and a cloned GitHub repository
 
 ## License
