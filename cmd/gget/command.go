@@ -22,8 +22,8 @@ type ResourceOptions struct {
 }
 
 type DownloadOptions struct {
-	ShowRef       bool `long:"show-ref" description:"list matched repository ref instead of downloading"`
-	ShowResources bool `long:"show-resources" description:"list matched resources instead of downloading"`
+	ShowRef       bool `long:"show-ref" description:"show resolved repository ref instead of downloading"`
+	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading"`
 
 	CD         string           `long:"cd" description:"change to directory before writing files"`
 	Executable ResourceMatchers `long:"executable" description:"apply executable permissions to downloads (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`

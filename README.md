@@ -65,8 +65,8 @@ Use `--help` to see all options and learn more about advanced usage.
           --exclude=[RESOURCE]              exclude resource(s) from download (glob-friendly; multiple)
 
     Download Options:
-          --show-ref                        list matched repository ref instead of downloading
-          --show-resources                  list matched resources instead of downloading
+          --show-ref                        show resolved repository ref instead of downloading
+          --show-resources                  show matched resources instead of downloading
           --cd=                             change to directory before writing files
           --executable=[RESOURCE]           apply executable permissions to downloads (glob-friendly; multiple)
           --stdout                          write file contents to stdout rather than disk
