@@ -95,7 +95,7 @@ go get -u github.com/dpb587/gget
 
 The `gget` image can be used as a build stage to download assets for a later stage.
 
-```
+```dockerfile
 FROM docker.pkg.github.com/dpb587/gget/gget as gget
 RUN gget --executable github.com/cloudfoundry/bosh-cli bosh=bosh-cli-*-linux-amd64
 RUN gget --executable github.com/cloudfoundry/bosh-bootloader bbl=bbl-*_linux_x86-64
@@ -103,7 +103,7 @@ RUN gget --stdout github.com/pivotal-cf/om om-linux-*.tar.gz | tar -xzf- om
 
 FROM ubuntu
 COPY --from=gget /result/* /usr/local/bin/
-...everything else for your image...
+# ...everything else for your image...
 ```
 
 ## Services
