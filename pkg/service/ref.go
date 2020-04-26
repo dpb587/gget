@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"path"
 	"strings"
 )
 
@@ -11,6 +12,22 @@ type Ref struct {
 	Owner      string
 	Repository string
 	Ref        string
+}
+
+func (r Ref) String() string {
+	str := r.Server
+
+	if str == "" {
+		str = "{:server-missing}"
+	}
+
+	str = path.Join(str, r.Owner, r.Repository)
+
+	if r.Ref != "" {
+		str = fmt.Sprintf("%s@%s", str, r.Ref)
+	}
+
+	return str
 }
 
 func ParseRefString(in string) (Ref, error) {

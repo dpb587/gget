@@ -15,21 +15,20 @@ import (
 )
 
 type Resource struct {
-	client            *github.Client
-	releaseOwner      string
-	releaseRepository string
-	ref               string
-	filename          string
+	client   *github.Client
+	ref      service.Ref
+	target   string
+	filename string
 }
 
 var _ service.ResolvedResource = &Resource{}
 
-func NewResource(client *github.Client, releaseOwner, releaseRepository, ref, filename string) *Resource {
+func NewResource(client *github.Client, ref service.Ref, target, filename string) *Resource {
 	return &Resource{
-		client:            client,
-		releaseOwner:      releaseOwner,
-		releaseRepository: releaseRepository,
-		filename:          filename,
+		client:   client,
+		ref:      ref,
+		target:   target,
+		filename: filename,
 	}
 }
 
@@ -52,12 +51,12 @@ func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
 
 	switch ext {
 	case ".tar.gz", ".tgz":
-		archiveLink, _, err = r.client.Repositories.GetArchiveLink(ctx, r.releaseOwner, r.releaseRepository, github.Tarball, &github.RepositoryContentGetOptions{
-			Ref: r.ref,
+		archiveLink, _, err = r.client.Repositories.GetArchiveLink(ctx, r.ref.Owner, r.ref.Repository, github.Tarball, &github.RepositoryContentGetOptions{
+			Ref: r.target,
 		}, false)
 	case ".zip":
-		archiveLink, _, err = r.client.Repositories.GetArchiveLink(ctx, r.releaseOwner, r.releaseRepository, github.Zipball, &github.RepositoryContentGetOptions{
-			Ref: r.ref,
+		archiveLink, _, err = r.client.Repositories.GetArchiveLink(ctx, r.ref.Owner, r.ref.Repository, github.Zipball, &github.RepositoryContentGetOptions{
+			Ref: r.target,
 		}, false)
 	default:
 		return nil, fmt.Errorf("unrecognized extension: %s", ext)

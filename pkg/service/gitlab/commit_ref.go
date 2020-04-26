@@ -1,21 +1,23 @@
-package github
+package gitlab
 
 import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/dpb587/gget/pkg/service"
-	"github.com/dpb587/gget/pkg/service/github/archive"
-	"github.com/dpb587/gget/pkg/service/github/blob"
-	"github.com/google/go-github/v29/github"
+	"github.com/dpb587/gget/pkg/service/gitlab/archive"
+	"github.com/dpb587/gget/pkg/service/gitlab/blob"
+	"github.com/dpb587/gget/pkg/service/gitlab/gitlabutil"
 	"github.com/pkg/errors"
+	"github.com/xanzy/go-gitlab"
 )
 
 type CommitRef struct {
 	service.RefMetadataService
 
-	client *github.Client
+	client *gitlab.Client
 	ref    service.Ref
 	commit string
 
@@ -36,8 +38,15 @@ func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.Re
 }
 
 func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service.Resource) ([]service.ResolvedResource, error) {
+	// https://docs.gitlab.com/ce/api/repositories.html#get-file-archive
 	candidates := []string{
+		fmt.Sprintf("%s.bz2", r.archiveFileBase),
+		fmt.Sprintf("%s.tar", r.archiveFileBase),
+		fmt.Sprintf("%s.tar.bz2", r.archiveFileBase),
 		fmt.Sprintf("%s.tar.gz", r.archiveFileBase),
+		fmt.Sprintf("%s.tb2", r.archiveFileBase),
+		fmt.Sprintf("%s.tbz", r.archiveFileBase),
+		fmt.Sprintf("%s.tbz2", r.archiveFileBase),
 		fmt.Sprintf("%s.zip", r.archiveFileBase),
 	}
 
@@ -55,6 +64,7 @@ func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service
 				r.ref,
 				r.commit,
 				candidate,
+				strings.TrimPrefix(candidate, fmt.Sprintf("%s.", r.archiveFileBase)),
 			),
 		)
 	}
@@ -66,17 +76,36 @@ func (r *CommitRef) resolveBlobResource(ctx context.Context, resource service.Re
 	var res []service.ResolvedResource
 
 	// get the full tree
-	tree, _, err := r.client.Git.GetTree(ctx, r.ref.Owner, r.ref.Repository, r.commit, true)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting commit tree")
+	pt := true
+	opts := &gitlab.ListTreeOptions{
+		ListOptions: gitlab.ListOptions{
+			PerPage: 100,
+		},
+		Ref:       &r.ref.Ref,
+		Recursive: &pt,
 	}
 
-	for _, candidate := range tree.Entries {
-		if match, _ := filepath.Match(string(resource), candidate.GetPath()); !match {
-			continue
+	for {
+		nodes, resp, err := r.client.Repositories.ListTree(gitlabutil.GetRepositoryID(r.ref), opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting commit tree")
 		}
 
-		res = append(res, blob.NewResource(r.client, r.ref.Owner, r.ref.Repository, candidate))
+		for _, candidate := range nodes {
+			if candidate.Type != "blob" {
+				continue
+			} else if match, _ := filepath.Match(string(resource), candidate.Path); !match {
+				continue
+			}
+
+			res = append(res, blob.NewResource(r.client, r.ref, r.commit, candidate))
+		}
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opts.ListOptions.Page = resp.NextPage
 	}
 
 	return res, nil

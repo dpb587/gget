@@ -10,7 +10,6 @@ import (
 	"sort"
 
 	"github.com/dpb587/gget/pkg/service"
-	"github.com/dpb587/gget/pkg/service/github"
 	"github.com/dpb587/gget/pkg/transfer"
 	"github.com/dpb587/gget/pkg/transfer/transferutil"
 	"github.com/pkg/errors"
@@ -80,10 +79,14 @@ func (c *Command) Execute(_ []string) error {
 		return fmt.Errorf("missing argument: repository")
 	}
 
-	ctx := context.Background()
-	svc := github.NewService(c.Runtime.Logger(), &github.ClientFactory{RoundTripFactory: c.Runtime.RoundTripLogger})
+	refResolver, err := c.Runtime.RefResolver()
+	if err != nil {
+		return errors.Wrap(err, "getting ref resolver")
+	}
 
-	ref, err := svc.ResolveRef(ctx, service.Ref(c.Args.Ref))
+	ctx := context.Background()
+
+	ref, err := refResolver.ResolveRef(ctx, service.Ref(c.Args.Ref))
 	if err != nil {
 		return errors.Wrap(err, "resolving ref")
 	}

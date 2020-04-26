@@ -14,6 +14,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/tidwall/limiter v0.0.0-20181220020158-fcddc63bb521
 	github.com/vbauerster/mpb/v4 v4.11.2
+	github.com/xanzy/go-gitlab v0.31.0
 	golang.org/x/crypto v0.0.0-20200117160349-530e935923ad // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
