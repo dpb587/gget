@@ -13,17 +13,30 @@ import (
 	"github.com/google/go-github/v29/github"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
+type roundTripTransformer func(http.RoundTripper) http.RoundTripper
+
 type ClientFactory struct {
-	RoundTripFactory func(http.RoundTripper) http.RoundTripper
+	log              *logrus.Logger
+	roundTripFactory roundTripTransformer
+}
+
+func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer) *ClientFactory {
+	return &ClientFactory{
+		log:              log,
+		roundTripFactory: roundTripFactory,
+	}
 }
 
 func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*github.Client, error) {
 	var tc *http.Client
 
 	if v := os.Getenv("GITHUB_TOKEN"); v != "" {
+		cf.log.Infof("found authentication for %s: env GITHUB_TOKEN", ref.Server)
+
 		tc = oauth2.NewClient(
 			ctx,
 			oauth2.StaticTokenSource(
@@ -55,8 +68,8 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*github.Clien
 		}
 	}
 
-	if cf.RoundTripFactory != nil {
-		tc.Transport = cf.RoundTripFactory(tc.Transport)
+	if cf.roundTripFactory != nil {
+		tc.Transport = cf.roundTripFactory(tc.Transport)
 	}
 
 	return github.NewClient(tc), nil
@@ -94,6 +107,8 @@ func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (*http.C
 	if machine == nil {
 		return nil, nil
 	}
+
+	cf.log.Infof("found authentication for %s: netrc %s", ref.Server, netrcPath)
 
 	res := oauth2.NewClient(
 		ctx,

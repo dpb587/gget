@@ -37,14 +37,14 @@ func (r *Runtime) RefResolver() (service.RefResolver, error) {
 	if r.Service == "" || r.Service == "github" {
 		resolvers = append(
 			resolvers,
-			github.NewService(r.Logger(), &github.ClientFactory{RoundTripFactory: r.RoundTripLogger}),
+			github.NewService(r.Logger(), github.NewClientFactory(r.Logger(), r.RoundTripLogger)),
 		)
 	}
 
 	if r.Service == "" || r.Service == "gitlab" {
 		resolvers = append(
 			resolvers,
-			gitlab.NewService(r.Logger(), &gitlab.ClientFactory{RoundTripFactory: r.RoundTripLogger}),
+			gitlab.NewService(r.Logger(), gitlab.NewClientFactory(r.Logger(), r.RoundTripLogger)),
 		)
 	}
 

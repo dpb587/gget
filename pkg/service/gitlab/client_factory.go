@@ -12,11 +12,22 @@ import (
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"github.com/xanzy/go-gitlab"
 )
 
+type roundTripTransformer func(http.RoundTripper) http.RoundTripper
+
 type ClientFactory struct {
-	RoundTripFactory func(http.RoundTripper) http.RoundTripper
+	log              *logrus.Logger
+	roundTripFactory func(http.RoundTripper) http.RoundTripper
+}
+
+func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer) *ClientFactory {
+	return &ClientFactory{
+		log:              log,
+		roundTripFactory: roundTripFactory,
+	}
 }
 
 func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*gitlab.Client, error) {
@@ -24,6 +35,8 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*gitlab.Clien
 	var token string
 
 	if v := os.Getenv("GITLAB_TOKEN"); v != "" {
+		cf.log.Infof("found authentication for %s: env GITLAB_TOKEN", ref.Server)
+
 		token = v
 	} else {
 		var err error
@@ -48,8 +61,8 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*gitlab.Clien
 		},
 	}
 
-	if cf.RoundTripFactory != nil {
-		tc.Transport = cf.RoundTripFactory(tc.Transport)
+	if cf.roundTripFactory != nil {
+		tc.Transport = cf.roundTripFactory(tc.Transport)
 	}
 
 	res, err := gitlab.NewClient(token, gitlab.WithHTTPClient(tc))
@@ -92,6 +105,8 @@ func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (string,
 	if machine == nil {
 		return "", nil
 	}
+
+	cf.log.Infof("found authentication for %s: netrc %s", ref.Server, netrcPath)
 
 	return machine.Password, nil
 }
