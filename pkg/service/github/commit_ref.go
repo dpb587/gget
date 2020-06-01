@@ -32,7 +32,7 @@ func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.Re
 		return r.resolveBlobResource(ctx, resource)
 	}
 
-	return nil, fmt.Errorf("unsupported resource type: %s", resourceType)
+	return nil, fmt.Errorf("unsupported resource type for commit ref: %s", resourceType)
 }
 
 func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service.Resource) ([]service.ResolvedResource, error) {
