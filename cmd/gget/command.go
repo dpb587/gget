@@ -135,8 +135,16 @@ func (c *Command) Execute(_ []string) error {
 	}
 
 	if c.ShowResources {
+		var results []string
+
 		for _, resource := range resourceMap {
-			fmt.Println(resource.GetName())
+			results = append(results, resource.GetName())
+		}
+
+		sort.Strings(results)
+
+		for _, result := range results {
+			fmt.Println(result)
 		}
 
 		return nil
