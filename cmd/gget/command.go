@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/transfer"
 	"github.com/dpb587/gget/pkg/transfer/transferutil"
@@ -150,6 +151,40 @@ func (c *Command) Execute(_ []string) error {
 		return nil
 	}
 
+	// output = stderr since everything should be progress reports
+	stdout := os.Stderr
+
+	if !c.Runtime.Quiet {
+		l := len(resourceMap)
+		ls := ""
+
+		if l != 1 {
+			ls = "s"
+		}
+
+		var downloadSizeMissing bool
+		var downloadSize int64
+
+		for _, resource := range resourceMap {
+			size := resource.GetSize()
+			if size == 0 {
+				downloadSizeMissing = true
+
+				break
+			}
+
+			downloadSize += size
+		}
+
+		var extra string
+
+		if !downloadSizeMissing {
+			extra = fmt.Sprintf(" (%s)", bytefmt.ByteSize(uint64(downloadSize)))
+		}
+
+		fmt.Fprintf(stdout, "Downloading %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
+	}
+
 	var transfers []*transfer.Transfer
 
 	for localPath, resource := range resourceMap {
@@ -173,7 +208,7 @@ func (c *Command) Execute(_ []string) error {
 		return transfers[i].GetSubject() < transfers[j].GetSubject()
 	})
 
-	var pbO io.Writer = os.Stderr
+	var pbO io.Writer = stdout
 
 	if c.Runtime.Quiet {
 		pbO = ioutil.Discard

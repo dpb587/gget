@@ -69,6 +69,7 @@ type RefResolver interface {
 type ResolvedRef interface {
 	ResourceResolver
 
+	CanonicalRef() Ref
 	GetMetadata() []RefMetadata
 }
 

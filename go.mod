@@ -3,6 +3,7 @@ module github.com/dpb587/gget
 go 1.13
 
 require (
+	code.cloudfoundry.org/bytefmt v0.0.0-20200131002437-cf55d5288a48
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d
 	github.com/google/go-github/v29 v29.0.2
 	github.com/jessevdk/go-flags v1.4.0

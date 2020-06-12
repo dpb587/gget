@@ -21,6 +21,10 @@ type ReleaseRef struct {
 
 var _ service.ResourceResolver = &ReleaseRef{}
 
+func (r *ReleaseRef) CanonicalRef() service.Ref {
+	return r.ref
+}
+
 func (r *ReleaseRef) GetMetadata() []service.RefMetadata {
 	return r.targetRef.GetMetadata()
 }

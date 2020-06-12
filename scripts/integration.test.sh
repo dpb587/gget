@@ -35,6 +35,14 @@ EOF
 
 rm *
 
+../gget --type=blob github.com/stedolan/jq@a17dd3248a README.md
+
+diff <( shasum * ) - <<EOF
+1c336249ffa502059d99ac700579c90382b0462b  README.md
+EOF
+
+rm *
+
 ../gget --stdout github.com/buildpacks/pack@v0.8.1 '*macos*' | tar -xzf-
 
 diff <( shasum * ) - <<EOF

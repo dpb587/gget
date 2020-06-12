@@ -26,6 +26,10 @@ type CommitRef struct {
 
 var _ service.ResourceResolver = &CommitRef{}
 
+func (r *CommitRef) CanonicalRef() service.Ref {
+	return r.ref
+}
+
 func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.Resource) ([]service.ResolvedResource, error) {
 	switch resourceType {
 	case service.ArchiveResourceType:

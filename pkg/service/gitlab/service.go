@@ -85,6 +85,8 @@ func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.Resol
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting commit resolution")
 		} else {
+			ref.Ref = commit.ID
+
 			return s.resolveCommitReference(ctx, client, ref, commit.ID)
 		}
 	}
