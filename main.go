@@ -5,9 +5,11 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/Masterminds/semver"
 	"github.com/dpb587/gget/cmd/gget"
 	"github.com/dpb587/gget/pkg/app"
 	"github.com/jessevdk/go-flags"
+	"github.com/pkg/errors"
 )
 
 var appName = "gget"
@@ -35,8 +37,24 @@ func main() {
 		fmt.Printf("\n")
 
 		return
-	} else if cmd.Runtime.Version {
+	} else if cmd.Runtime.Version != nil {
 		app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
+
+		if conStr := *cmd.Runtime.Version; len(conStr) > 0 {
+			con, err := semver.NewConstraint(conStr)
+			if err != nil {
+				fatal(errors.Wrap(err, "parsing version constraint"))
+			}
+
+			ver, err := semver.NewVersion(v.Semver)
+			if err != nil {
+				fatal(errors.Wrap(err, "parsing application version"))
+			}
+
+			if !con.Check(ver) {
+				fatal(fmt.Errorf("version '%s' does not satisfy constraint: %s", v.Semver, conStr))
+			}
+		}
 
 		return
 	} else if err != nil {

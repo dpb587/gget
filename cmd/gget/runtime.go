@@ -18,8 +18,8 @@ type Runtime struct {
 	Parallel int    `long:"parallel" description:"maximum number of parallel operations" default:"3"`
 	Service  string `long:"service" description:"specific git service to use (i.e. github, gitlab; default: auto-detect)"`
 
-	Help    bool `long:"help" short:"h" description:"show documentation of this command"`
-	Version bool `long:"version" description:"show version of this command"`
+	Help    bool    `long:"help" short:"h" description:"show documentation of this command"`
+	Version *string `long:"version" description:"show version of this command (optionally verifying a constraint)" optional:"true" optional-value:"" value-name:"[CONSTRAINT]"`
 
 	app    app.Version
 	logger *logrus.Logger
