@@ -11,36 +11,45 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/dpb587/gget/pkg/service"
+	"github.com/dpb587/gget/pkg/service/github"
+	"github.com/dpb587/gget/pkg/service/gitlab"
 	"github.com/dpb587/gget/pkg/transfer"
 	"github.com/dpb587/gget/pkg/transfer/transferutil"
 	"github.com/pkg/errors"
 )
 
+type RepositoryOptions struct {
+	Service string `long:"service" description:"specific git service to use (values: github, gitlab) (default: auto-detect)" value-name:"NAME"`
+
+	ShowRef bool `long:"show-ref" description:"show resolved repository ref instead of downloading"`
+}
+
 type ResourceOptions struct {
-	Type          service.ResourceType `long:"type" description:"type of resource to get (e.g. asset, archive, blob)" default:"asset"`
-	IgnoreMissing ResourceMatchers     `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
-	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (glob-friendly; multiple)" value-name:"[RESOURCE]"`
+	Type          service.ResourceType `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
+	IgnoreMissing ResourceMatchers     `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (multiple)" value-name:"RESOURCE-GLOB"`
+
+	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading"`
 }
 
 type DownloadOptions struct {
-	ShowRef       bool `long:"show-ref" description:"show resolved repository ref instead of downloading"`
-	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading"`
-
-	CD         string           `long:"cd" description:"change to directory before writing files"`
-	Executable ResourceMatchers `long:"executable" description:"apply executable permissions to downloads (glob-friendly; multiple)" value-name:"[RESOURCE]" optional:"true" optional-value:"*"`
+	CD         string           `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
+	Executable ResourceMatchers `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
 	Stdout     bool             `long:"stdout" description:"write file contents to stdout rather than disk"`
+	Parallel   int              `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
 }
 
 type Command struct {
-	*Runtime         `group:"Runtime Options"`
-	*ResourceOptions `group:"Resource Options"`
-	*DownloadOptions `group:"Download Options"`
-	Args             CommandArgs `positional-args:"true" required:"true"`
+	*Runtime           `group:"Runtime Options"`
+	*RepositoryOptions `group:"Repository Options"`
+	*ResourceOptions   `group:"Resource Options"`
+	*DownloadOptions   `group:"Download Options"`
+	Args               CommandArgs `positional-args:"true" required:"true"`
 }
 
 type CommandArgs struct {
-	Ref       RefOpt                 `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"release reference"`
-	Resources []ResourceTransferSpec `positional-arg-name:"[LOCAL-PATH=]RESOURCE" description:"resource name(s) to download (glob-friendly)" optional:"true"`
+	Ref       RefOpt                 `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"repository reference"`
+	Resources []ResourceTransferSpec `positional-arg-name:"[LOCAL-PATH=]RESOURCE-GLOB" description:"resource name(s) to download" optional:"true"`
 }
 
 func (c *Command) applySettings() {
@@ -73,6 +82,33 @@ func (c *Command) applySettings() {
 	}
 }
 
+func (c *Command) RefResolver() (service.RefResolver, error) {
+	var resolvers []service.ConditionalRefResolver
+
+	if c.Service == "" || c.Service == "github" {
+		resolvers = append(
+			resolvers,
+			github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.RoundTripLogger)),
+		)
+	}
+
+	if c.Service == "" || c.Service == "gitlab" {
+		resolvers = append(
+			resolvers,
+			gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.RoundTripLogger)),
+		)
+	}
+
+	switch len(resolvers) {
+	case 0:
+		return nil, fmt.Errorf("unsupported service: %s", c.Service)
+	case 1:
+		return resolvers[0], nil
+	}
+
+	return service.NewMultiRefResolver(resolvers...), nil
+}
+
 func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
@@ -80,7 +116,7 @@ func (c *Command) Execute(_ []string) error {
 		return fmt.Errorf("missing argument: repository")
 	}
 
-	refResolver, err := c.Runtime.RefResolver()
+	refResolver, err := c.RefResolver()
 	if err != nil {
 		return errors.Wrap(err, "getting ref resolver")
 	}
@@ -214,7 +250,7 @@ func (c *Command) Execute(_ []string) error {
 		pbO = ioutil.Discard
 	}
 
-	batch := transfer.NewBatch(transfers, c.Runtime.Parallel, pbO)
+	batch := transfer.NewBatch(transfers, c.Parallel, pbO)
 
 	return batch.Transfer(ctx)
 }

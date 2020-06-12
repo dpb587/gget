@@ -1,22 +1,16 @@
 package gget
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 
 	"github.com/dpb587/gget/pkg/app"
-	"github.com/dpb587/gget/pkg/service"
-	"github.com/dpb587/gget/pkg/service/github"
-	"github.com/dpb587/gget/pkg/service/gitlab"
 	"github.com/sirupsen/logrus"
 )
 
 type Runtime struct {
-	Quiet    bool   `long:"quiet" short:"q" description:"suppress runtime status reporting"`
-	Verbose  []bool `long:"verbose" short:"v" description:"increase logging verbosity"`
-	Parallel int    `long:"parallel" description:"maximum number of parallel operations" default:"3"`
-	Service  string `long:"service" description:"specific git service to use (i.e. github, gitlab; default: auto-detect)"`
+	Quiet   bool   `long:"quiet" short:"q" description:"suppress runtime status reporting"`
+	Verbose []bool `long:"verbose" short:"v" description:"increase logging verbosity (multiple)"`
 
 	Help    bool    `long:"help" short:"h" description:"show documentation of this command"`
 	Version *string `long:"version" description:"show version of this command (optionally verifying a constraint)" optional:"true" optional-value:"" value-name:"[CONSTRAINT]"`
@@ -29,33 +23,6 @@ func NewRuntime(app app.Version) *Runtime {
 	return &Runtime{
 		app: app,
 	}
-}
-
-func (r *Runtime) RefResolver() (service.RefResolver, error) {
-	var resolvers []service.ConditionalRefResolver
-
-	if r.Service == "" || r.Service == "github" {
-		resolvers = append(
-			resolvers,
-			github.NewService(r.Logger(), github.NewClientFactory(r.Logger(), r.RoundTripLogger)),
-		)
-	}
-
-	if r.Service == "" || r.Service == "gitlab" {
-		resolvers = append(
-			resolvers,
-			gitlab.NewService(r.Logger(), gitlab.NewClientFactory(r.Logger(), r.RoundTripLogger)),
-		)
-	}
-
-	switch len(resolvers) {
-	case 0:
-		return nil, fmt.Errorf("unsupported service: %s", r.Service)
-	case 1:
-		return resolvers[0], nil
-	}
-
-	return service.NewMultiRefResolver(resolvers...), nil
 }
 
 func (r *Runtime) Logger() *logrus.Logger {

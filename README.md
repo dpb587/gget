@@ -49,31 +49,33 @@ Use the `blob` type to download individual repository files. Branch and commit r
 Use `--help` to see all options and learn more about advanced usage.
 
     Usage:
-      gget HOST/OWNER/REPOSITORY[@REF] [LOCAL-PATH=]RESOURCE...
+      gget HOST/OWNER/REPOSITORY[@REF] [LOCAL-PATH=]RESOURCE-GLOB...
 
     Runtime Options:
-      -q, --quiet                           suppress runtime status reporting
-      -v, --verbose                         increase logging verbosity
-          --parallel=                       maximum number of parallel operations (default: 3)
-          --service=                        specific git service to use (i.e. github, gitlab; default: auto-detect)
-      -h, --help                            show documentation of this command
-          --version                         show version of this command
+      -q, --quiet                             suppress runtime status reporting
+      -v, --verbose                           increase logging verbosity (multiple)
+      -h, --help                              show documentation of this command
+          --version=[CONSTRAINT]              show version of this command (optionally verifying a constraint)
+
+    Repository Options:
+          --service=NAME                      specific git service to use (values: github, gitlab) (default: auto-detect)
+          --show-ref                          show resolved repository ref instead of downloading
 
     Resource Options:
-          --type=                           type of resource to get (e.g. asset, archive, blob) (default: asset)
-          --ignore-missing=[RESOURCE]       if a resource is not found, skip it rather than failing (glob-friendly; multiple)
-          --exclude=[RESOURCE]              exclude resource(s) from download (glob-friendly; multiple)
+          --type=TYPE                         type of resource to get (values: asset, archive, blob) (default: asset)
+          --ignore-missing=[RESOURCE-GLOB]    if a resource is not found, skip it rather than failing (multiple)
+          --exclude=RESOURCE-GLOB             exclude resource(s) from download (multiple)
+          --show-resources                    show matched resources instead of downloading
 
     Download Options:
-          --show-ref                        show resolved repository ref instead of downloading
-          --show-resources                  show matched resources instead of downloading
-          --cd=                             change to directory before writing files
-          --executable=[RESOURCE]           apply executable permissions to downloads (glob-friendly; multiple)
-          --stdout                          write file contents to stdout rather than disk
+          --cd=DIR                            change to directory before writing files
+          --executable=[RESOURCE-GLOB]        apply executable permissions to downloads (multiple)
+          --stdout                            write file contents to stdout rather than disk
+          --parallel=INT                      maximum number of parallel downloads (default: 3)
 
     Arguments:
-      HOST/OWNER/REPOSITORY[@REF]:          release reference
-      [LOCAL-PATH=]RESOURCE:                resource name(s) to download (glob-friendly)
+      HOST/OWNER/REPOSITORY[@REF]:            repository reference
+      [LOCAL-PATH=]RESOURCE-GLOB:             resource name(s) to download
 
 ### Installation
 
