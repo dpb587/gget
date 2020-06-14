@@ -46,6 +46,10 @@ Use the `blob` type to download individual repository files. Branch and commit r
 
     gget --type=blob github.com/stedolan/jq@jq-1.5-branch README.md
 
+If you want to use variables in the RESOURCE argument, then the argument must **not** be surrounded by single quotes.
+
+    gget github.com/grafana/loki ${APP}-linux-amd64*
+
 Use `--help` to see all options and learn more about advanced usage.
 
     Usage:
