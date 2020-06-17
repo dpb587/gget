@@ -30,7 +30,7 @@ Provide file names (or globs) as additional arguments to limit the files are dow
 
     gget github.com/gohugoio/hugo 'hugo_extended_*_Linux-ARM.deb'
 
-Use the `--exclude=` option to avoid files with overlapping matches.
+Use `--exclude=` to avoid files with overlapping matches.
 
     gget github.com/gohugoio/hugo --exclude='*extended*' 'hugo_*_Linux-ARM.deb'
 
@@ -38,7 +38,15 @@ Prefix remote file names with a custom local file path to use an alternative dow
 
     gget --executable github.com/stedolan/jq /usr/local/bin/jq=jq-osx-amd64
 
-Use the `--type=` option to download files other than user-uploaded release assets. Use `archive` to access zip or tarball archives of the repository files.
+The `--ref-*` options may be used when no tag/ref is passed with the repository. Use `--ref-stability=` to limit or expand the types of releases to look for.
+
+    gget --ref-stability=pre-release github.com/prometheus/prometheus '*dragonfly*'
+
+Use `--ref-version=` to provide a version constraint to use instead of latest.
+
+    gget --ref-version=1.0.x github.com/prometheus/pushgateway '*dragonfly*'
+
+Use `--type=` to download files other than user-uploaded release assets. Use `archive` to access zip or tarball archives of the repository files.
 
     gget --type=archive github.com/stedolan/jq '*.zip'
 
@@ -59,6 +67,8 @@ Use `--help` to see all options and learn more about advanced usage.
 
     Repository Options:
           --service=NAME                      specific git service to use (values: github, gitlab) (default: auto-detect)
+          --ref-version=CONSTRAINT            version constraint(s) to require of latest (e.g. 4.x)
+          --ref-stability=STABILITY           acceptable stability level(s) for latest (values: stable, pre-release, any) (default: stable)
           --show-ref                          show resolved repository ref instead of downloading
 
     Resource Options:

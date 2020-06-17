@@ -31,11 +31,11 @@ func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer)
 	}
 }
 
-func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*github.Client, error) {
+func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*github.Client, error) {
 	var tc *http.Client
 
 	if v := os.Getenv("GITHUB_TOKEN"); v != "" {
-		cf.log.Infof("found authentication for %s: env GITHUB_TOKEN", ref.Server)
+		cf.log.Infof("found authentication for %s: env GITHUB_TOKEN", lookupRef.Ref.Server)
 
 		tc = oauth2.NewClient(
 			ctx,
@@ -46,7 +46,7 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*github.Clien
 	} else {
 		var err error
 
-		tc, err = cf.loadNetrc(ctx, ref)
+		tc, err = cf.loadNetrc(ctx, lookupRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "loading auth from netrc")
 		}
@@ -75,7 +75,7 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*github.Clien
 	return github.NewClient(tc), nil
 }
 
-func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (*http.Client, error) {
+func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupRef) (*http.Client, error) {
 	netrcPath := os.Getenv("NETRC")
 	if netrcPath == "" {
 		var err error
@@ -103,12 +103,12 @@ func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (*http.C
 		return nil, errors.Wrap(err, "parsing netrc")
 	}
 
-	machine := rc.FindMachine(ref.Server)
+	machine := rc.FindMachine(lookupRef.Ref.Server)
 	if machine == nil {
 		return nil, nil
 	}
 
-	cf.log.Infof("found authentication for %s: netrc %s", ref.Server, netrcPath)
+	cf.log.Infof("found authentication for %s: netrc %s", lookupRef.Ref.Server, netrcPath)
 
 	res := oauth2.NewClient(
 		ctx,

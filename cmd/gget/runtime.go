@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/dpb587/gget/pkg/app"
+	"github.com/dpb587/gget/pkg/cli/opt"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,8 +13,8 @@ type Runtime struct {
 	Quiet   bool   `long:"quiet" short:"q" description:"suppress runtime status reporting"`
 	Verbose []bool `long:"verbose" short:"v" description:"increase logging verbosity (multiple)"`
 
-	Help    bool    `long:"help" short:"h" description:"show documentation of this command"`
-	Version *string `long:"version" description:"show version of this command (optionally verifying a constraint)" optional:"true" optional-value:"" value-name:"[CONSTRAINT]"`
+	Help    bool            `long:"help" short:"h" description:"show documentation of this command"`
+	Version *opt.Constraint `long:"version" description:"show version of this command (optionally verifying a constraint)" optional:"true" optional-value:"*" value-name:"[CONSTRAINT]"`
 
 	app    app.Version
 	logger *logrus.Logger

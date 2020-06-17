@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/dpb587/gget/pkg/gitutil"
 	"github.com/dpb587/gget/pkg/service"
@@ -29,69 +30,115 @@ func NewService(log *logrus.Logger, clientFactory *ClientFactory) *Service {
 var _ service.RefResolver = &Service{}
 var _ service.ConditionalRefResolver = &Service{}
 
-func (s Service) IsRefSupported(_ context.Context, ref service.Ref) bool {
-	return ref.Server == "gitlab.com"
+func (s Service) IsRefSupported(_ context.Context, lookupRef service.LookupRef) bool {
+	return lookupRef.Ref.Server == "gitlab.com"
 }
 
-func (s Service) ResolveRef(ctx context.Context, ref service.Ref) (service.ResolvedRef, error) {
-	client, err := s.clientFactory.Get(ctx, ref)
+func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (service.ResolvedRef, error) {
+	client, err := s.clientFactory.Get(ctx, lookupRef)
 	if err != nil {
 		return nil, errors.Wrap(err, "building client")
 	}
 
-	var cachedRelease *gitlab.Release
-	idPath := gitlabutil.GetRepositoryID(ref)
+	canonicalRef := lookupRef.Ref
 
-	if ref.Ref == "" {
-		releases, resp, err := client.Releases.ListReleases(idPath, nil)
+	var cachedRelease *gitlab.Release
+
+	if canonicalRef.Ref == "" {
+		release, err := s.resolveLatest(ctx, client, lookupRef)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting latest release")
-		} else if resp.StatusCode == http.StatusNotFound {
-			return nil, errors.New("repository not found")
-		} else if len(releases) == 0 {
-			return nil, errors.New("no releases found")
+			return nil, errors.Wrap(err, "resolving latest")
 		}
 
-		ref.Ref = releases[0].TagName
-		cachedRelease = releases[0]
+		canonicalRef.Ref = release.TagName
+		cachedRelease = release
 	}
 
+	idPath := gitlabutil.GetRepositoryID(canonicalRef)
+
 	{ // tag
-		tag, resp, err := client.Tags.GetTag(idPath, ref.Ref)
+		tag, resp, err := client.Tags.GetTag(idPath, canonicalRef.Ref)
 		if resp.StatusCode == http.StatusNotFound {
 			// oh well
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting tag resolution")
 		} else if tag != nil {
-			return s.resolveTagReference(ctx, client, ref, tag, cachedRelease)
+			return s.resolveTagReference(ctx, client, canonicalRef, tag, cachedRelease)
 		}
 	}
 
 	{ // head
-		branch, resp, err := client.Branches.GetBranch(idPath, ref.Ref)
+		branch, resp, err := client.Branches.GetBranch(idPath, canonicalRef.Ref)
 		if resp.StatusCode == http.StatusNotFound {
 			// oh well
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting branch resolution")
 		} else if branch != nil {
-			return s.resolveHeadReference(ctx, client, ref, branch)
+			return s.resolveHeadReference(ctx, client, canonicalRef, branch)
 		}
 	}
 
-	if gitutil.PotentialCommitRE.MatchString(ref.Ref) { // commit
-		commit, resp, err := client.Commits.GetCommit(idPath, ref.Ref)
+	if gitutil.PotentialCommitRE.MatchString(canonicalRef.Ref) { // commit
+		commit, resp, err := client.Commits.GetCommit(idPath, canonicalRef.Ref)
 		if resp.StatusCode == http.StatusNotFound {
 			// oh well
 		} else if err != nil {
 			return nil, errors.Wrap(err, "attempting commit resolution")
 		} else {
-			ref.Ref = commit.ID
+			canonicalRef.Ref = commit.ID
 
-			return s.resolveCommitReference(ctx, client, ref, commit.ID)
+			return s.resolveCommitReference(ctx, client, canonicalRef, commit.ID)
 		}
 	}
 
-	return nil, fmt.Errorf("unable to resolve as tag, branch, nor commit: %s", ref.Ref)
+	return nil, fmt.Errorf("unable to resolve as tag, branch, nor commit: %s", canonicalRef.Ref)
+}
+
+func (s Service) resolveLatest(ctx context.Context, client *gitlab.Client, lookupRef service.LookupRef) (*gitlab.Release, error) {
+	idPath := gitlabutil.GetRepositoryID(lookupRef.Ref)
+
+	opts := gitlab.ListReleasesOptions{
+		PerPage: 25,
+	}
+
+	for {
+		releases, resp, err := client.Releases.ListReleases(idPath, &opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting releases")
+		} else if resp.StatusCode == http.StatusNotFound {
+			return nil, errors.New("repository not found")
+		}
+
+		for _, release := range releases {
+			if !lookupRef.SatisfiesStability("stable") {
+				continue
+			}
+
+			tagName := release.TagName
+			match, err := lookupRef.SatisfiesVersion(tagName)
+			if err != nil {
+				s.log.Debugf("skipping invalid semver tag: %s", tagName)
+
+				continue
+			} else if !match {
+				continue
+			}
+
+			return release, nil
+		}
+
+		opts.Page = resp.NextPage
+
+		if opts.Page == 0 {
+			break
+		}
+	}
+
+	if lookupRef.IsComplexRef() {
+		return nil, fmt.Errorf("failed to find release matching constraints: %s", strings.Join(lookupRef.ComplexRefModes(), ", "))
+	}
+
+	return nil, errors.New("no latest release found")
 }
 
 func (s Service) resolveCommitReference(ctx context.Context, client *gitlab.Client, ref service.Ref, commitSHA string) (service.ResolvedRef, error) {

@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	"code.cloudfoundry.org/bytefmt"
+	"github.com/dpb587/gget/pkg/cli/opt"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/service/github"
 	"github.com/dpb587/gget/pkg/service/gitlab"
@@ -20,6 +21,9 @@ import (
 
 type RepositoryOptions struct {
 	Service string `long:"service" description:"specific git service to use (values: github, gitlab) (default: auto-detect)" value-name:"NAME"`
+
+	RefVersions  opt.ConstraintList `long:"ref-version" description:"version constraint(s) to require of latest (e.g. 4.x)" value-name:"CONSTRAINT"`
+	RefStability []string           `long:"ref-stability" description:"acceptable stability level(s) for latest (values: stable, pre-release, any) (default: stable)" value-name:"STABILITY"`
 
 	ShowRef bool `long:"show-ref" description:"show resolved repository ref instead of downloading"`
 }
@@ -123,7 +127,11 @@ func (c *Command) Execute(_ []string) error {
 
 	ctx := context.Background()
 
-	ref, err := refResolver.ResolveRef(ctx, service.Ref(c.Args.Ref))
+	ref, err := refResolver.ResolveRef(ctx, service.LookupRef{
+		Ref:          service.Ref(c.Args.Ref),
+		RefVersions:  c.RefVersions.Constraints(),
+		RefStability: c.RefStability,
+	})
 	if err != nil {
 		return errors.Wrap(err, "resolving ref")
 	}

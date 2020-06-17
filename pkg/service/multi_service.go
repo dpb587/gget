@@ -20,17 +20,17 @@ func NewMultiRefResolver(resolvers ...ConditionalRefResolver) RefResolver {
 type ConditionalRefResolver interface {
 	RefResolver
 
-	IsRefSupported(context.Context, Ref) bool
+	IsRefSupported(context.Context, LookupRef) bool
 }
 
-func (rr MultiRefResolver) ResolveRef(ctx context.Context, ref Ref) (ResolvedRef, error) {
+func (rr MultiRefResolver) ResolveRef(ctx context.Context, lookupRef LookupRef) (ResolvedRef, error) {
 	for _, resolver := range rr.resolvers {
-		if !resolver.IsRefSupported(ctx, ref) {
+		if !resolver.IsRefSupported(ctx, lookupRef) {
 			continue
 		}
 
-		return resolver.ResolveRef(ctx, ref)
+		return resolver.ResolveRef(ctx, lookupRef)
 	}
 
-	return nil, fmt.Errorf("failed to detect service: %s", ref)
+	return nil, fmt.Errorf("failed to detect service: %s", lookupRef)
 }

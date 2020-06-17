@@ -40,19 +40,14 @@ func main() {
 	} else if cmd.Runtime.Version != nil {
 		app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
 
-		if conStr := *cmd.Runtime.Version; len(conStr) > 0 {
-			con, err := semver.NewConstraint(conStr)
-			if err != nil {
-				fatal(errors.Wrap(err, "parsing version constraint"))
-			}
-
+		if cmd.Runtime.Version.RawConstraint != "*" {
 			ver, err := semver.NewVersion(v.Semver)
 			if err != nil {
 				fatal(errors.Wrap(err, "parsing application version"))
 			}
 
-			if !con.Check(ver) {
-				fatal(fmt.Errorf("version '%s' does not satisfy constraint: %s", v.Semver, conStr))
+			if !cmd.Runtime.Version.Check(ver) {
+				fatal(fmt.Errorf("version '%s' does not satisfy constraint: %s", v.Semver, cmd.Runtime.Version.RawConstraint))
 			}
 		}
 

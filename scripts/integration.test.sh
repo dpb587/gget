@@ -10,6 +10,14 @@ rm -fr tmp/integrationtest/workdir
 mkdir tmp/integrationtest/workdir
 cd tmp/integrationtest/workdir
 
+../gget github.com/dpb587/gget --ref-version=0.2.x '*linux*'
+
+diff <( shasum * ) - <<EOF
+734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
+EOF
+
+rm *
+
 ../gget github.com/gohugoio/hugo@v0.63.1 --exclude='*extended*' 'hugo_*_Linux-ARM.deb'
 
 diff <( shasum * ) - <<EOF
@@ -50,6 +58,24 @@ diff <( shasum * ) - <<EOF
 EOF
 
 rm *
+
+../gget gitlab.com/gitlab-org/gitlab@v12.10.0-ee 'gitlab-*-released'
+
+grep -q 'GitLab 12.10 released with Requirements Management, Autoscaling CI on AWS Fargate' gitlab-*-released
+
+rm *
+
+../gget gitlab.com/gitlab-org/gitlab-runner --ref-version=11.x 'gitlab-runner_amd64.deb'
+
+diff <( shasum * ) - <<EOF
+8b5f4e982e692331571fc9cdf055f9f73a74b09d  gitlab-runner_amd64.deb
+EOF
+
+rm *
+
+../gget --version > /dev/null
+
+../gget --version=0.0.0 > /dev/null
 
 ../gget --help > /dev/null
 

@@ -30,18 +30,18 @@ func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer)
 	}
 }
 
-func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*gitlab.Client, error) {
+func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*gitlab.Client, error) {
 	var tc *http.Client
 	var token string
 
 	if v := os.Getenv("GITLAB_TOKEN"); v != "" {
-		cf.log.Infof("found authentication for %s: env GITLAB_TOKEN", ref.Server)
+		cf.log.Infof("found authentication for %s: env GITLAB_TOKEN", lookupRef.Ref.Server)
 
 		token = v
 	} else {
 		var err error
 
-		token, err = cf.loadNetrc(ctx, ref)
+		token, err = cf.loadNetrc(ctx, lookupRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "loading auth from netrc")
 		}
@@ -73,7 +73,7 @@ func (cf ClientFactory) Get(ctx context.Context, ref service.Ref) (*gitlab.Clien
 	return res, nil
 }
 
-func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (string, error) {
+func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupRef) (string, error) {
 	netrcPath := os.Getenv("NETRC")
 	if netrcPath == "" {
 		var err error
@@ -101,12 +101,12 @@ func (cf ClientFactory) loadNetrc(ctx context.Context, ref service.Ref) (string,
 		return "", errors.Wrap(err, "parsing netrc")
 	}
 
-	machine := rc.FindMachine(ref.Server)
+	machine := rc.FindMachine(lookupRef.Ref.Server)
 	if machine == nil {
 		return "", nil
 	}
 
-	cf.log.Infof("found authentication for %s: netrc %s", ref.Server, netrcPath)
+	cf.log.Infof("found authentication for %s: netrc %s", lookupRef.Ref.Server, netrcPath)
 
 	return machine.Password, nil
 }
