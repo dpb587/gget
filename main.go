@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/Masterminds/semver"
 	"github.com/dpb587/gget/cmd/gget"
@@ -33,7 +35,10 @@ func main() {
 
 	_, err := parser.Parse()
 	if cmd.Runtime.Help {
-		parser.WriteHelp(os.Stdout)
+		buf := &bytes.Buffer{}
+		parser.WriteHelp(buf)
+
+		fmt.Print(strings.Replace(buf.String(), ") (", "; ", -1))
 		fmt.Printf("\n")
 
 		return

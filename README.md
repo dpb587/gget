@@ -66,13 +66,13 @@ Use `--help` to see all options and learn more about advanced usage.
           --version=[CONSTRAINT]              show version of this command (optionally verifying a constraint)
 
     Repository Options:
-          --service=NAME                      specific git service to use (values: github, gitlab) (default: auto-detect)
+          --service=NAME                      specific git service to use (values: github, gitlab; default: auto-detect)
           --ref-version=CONSTRAINT            version constraint(s) to require of latest (e.g. 4.x)
-          --ref-stability=STABILITY           acceptable stability level(s) for latest (values: stable, pre-release, any) (default: stable)
+          --ref-stability=STABILITY           acceptable stability level(s) for latest (values: stable, pre-release, any; default: stable)
           --show-ref                          show resolved repository ref instead of downloading
 
     Resource Options:
-          --type=TYPE                         type of resource to get (values: asset, archive, blob) (default: asset)
+          --type=TYPE                         type of resource to get (values: asset, archive, blob; default: asset)
           --ignore-missing=[RESOURCE-GLOB]    if a resource is not found, skip it rather than failing (multiple)
           --exclude=RESOURCE-GLOB             exclude resource(s) from download (multiple)
           --show-resources                    show matched resources instead of downloading
