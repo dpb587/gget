@@ -80,7 +80,15 @@ func (cm *ReleaseChecksumManager) requireOptimistic(ctx context.Context) error {
 	parser.ImportMarkdown(cm.known, cm.release.GetBody())
 
 	for _, releaseAsset := range cm.release.Assets {
-		if !strings.HasSuffix(releaseAsset.GetName(), "checksums.txt") {
+		name := strings.ToLower(releaseAsset.GetName())
+
+		if name == "sha256sums.txt" {
+			// useful
+		} else if name == "sha512sums.txt" {
+			// useful
+		} else if strings.HasSuffix(name, "checksums.txt") {
+			// useful
+		} else {
 			continue
 		}
 
