@@ -72,12 +72,16 @@ func (rtl roundTripLogger) RoundTrip(req *http.Request) (resp *http.Response, er
 
 	res, err := rtl.rt.RoundTrip(req)
 
-	rtl.l.Infof("http: %s %s (status: %s)", req.Method, req.URL.String(), res.Status)
+	if res == nil {
+		rtl.l.Info("http: %s %s (response error)", req.Method, req.URL.String())
+	} else {
+		rtl.l.Infof("http: %s %s (status: %s)", req.Method, req.URL.String(), res.Status)
 
-	if v := res.Header.Get("ratelimit-remaining"); v != "" {
-		rtl.l.Debugf("http: %s %s (ratelimit-remaining: %s)", req.Method, req.URL.String(), v)
-	} else if v := res.Header.Get("x-ratelimit-remaining"); v != "" {
-		rtl.l.Debugf("http: %s %s (x-ratelimit-remaining: %s)", req.Method, req.URL.String(), v)
+		if v := res.Header.Get("ratelimit-remaining"); v != "" {
+			rtl.l.Debugf("http: %s %s (ratelimit-remaining: %s)", req.Method, req.URL.String(), v)
+		} else if v := res.Header.Get("x-ratelimit-remaining"); v != "" {
+			rtl.l.Debugf("http: %s %s (x-ratelimit-remaining: %s)", req.Method, req.URL.String(), v)
+		}
 	}
 
 	return res, err
