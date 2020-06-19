@@ -29,18 +29,18 @@ type RepositoryOptions struct {
 }
 
 type ResourceOptions struct {
-	Type          service.ResourceType `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
-	IgnoreMissing ResourceMatchers     `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	Exclude       ResourceMatchers     `long:"exclude" description:"exclude resource(s) from download (multiple)" value-name:"RESOURCE-GLOB"`
+	Type          service.ResourceType    `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
+	IgnoreMissing opt.ResourceMatcherList `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	Exclude       opt.ResourceMatcherList `long:"exclude" description:"exclude resource(s) from download (multiple)" value-name:"RESOURCE-GLOB"`
 
 	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading"`
 }
 
 type DownloadOptions struct {
-	CD         string           `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
-	Executable ResourceMatchers `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	Stdout     bool             `long:"stdout" description:"write file contents to stdout rather than disk"`
-	Parallel   int              `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
+	CD         string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
+	Executable opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	Stdout     bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
+	Parallel   int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
 }
 
 type Command struct {
@@ -52,15 +52,15 @@ type Command struct {
 }
 
 type CommandArgs struct {
-	Ref       RefOpt                 `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"repository reference"`
-	Resources []ResourceTransferSpec `positional-arg-name:"[LOCAL-PATH=]RESOURCE-GLOB" description:"resource name(s) to download" optional:"true"`
+	Ref       opt.Ref                  `positional-arg-name:"HOST/OWNER/REPOSITORY[@REF]" description:"repository reference"`
+	Resources opt.ResourceTransferList `positional-arg-name:"[LOCAL-PATH=]RESOURCE-GLOB" description:"resource name(s) to download" optional:"true"`
 }
 
 func (c *Command) applySettings() {
 	if len(c.Args.Resources) == 0 {
-		c.Args.Resources = []ResourceTransferSpec{
+		c.Args.Resources = opt.ResourceTransferList{
 			{
-				RemoteMatch: ResourceMatcher("*"),
+				RemoteMatch: opt.ResourceMatcher("*"),
 			},
 		}
 	}
@@ -150,7 +150,7 @@ func (c *Command) Execute(_ []string) error {
 	resourceMap := map[string]service.ResolvedResource{}
 
 	for _, userResource := range c.Args.Resources {
-		candidateResources, err := ref.ResolveResource(ctx, c.Type, service.Resource(string(userResource.RemoteMatch)))
+		candidateResources, err := ref.ResolveResource(ctx, c.Type, service.ResourceName(string(userResource.RemoteMatch)))
 		if err != nil {
 			return errors.Wrapf(err, "resolving resource %s", string(userResource.RemoteMatch))
 		} else if len(candidateResources) == 0 {

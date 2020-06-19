@@ -30,7 +30,7 @@ func (r *ReleaseRef) GetMetadata() []service.RefMetadata {
 	return r.targetRef.GetMetadata()
 }
 
-func (r *ReleaseRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.Resource) ([]service.ResolvedResource, error) {
+func (r *ReleaseRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.ResourceName) ([]service.ResolvedResource, error) {
 	if resourceType == service.AssetResourceType {
 		return r.resolveAssetResource(ctx, resource)
 	}
@@ -38,7 +38,7 @@ func (r *ReleaseRef) ResolveResource(ctx context.Context, resourceType service.R
 	return r.targetRef.ResolveResource(ctx, resourceType, resource)
 }
 
-func (r *ReleaseRef) resolveAssetResource(ctx context.Context, resource service.Resource) ([]service.ResolvedResource, error) {
+func (r *ReleaseRef) resolveAssetResource(ctx context.Context, resource service.ResourceName) ([]service.ResolvedResource, error) {
 	var res []service.ResolvedResource
 
 	for _, candidate := range r.release.Assets.Links {

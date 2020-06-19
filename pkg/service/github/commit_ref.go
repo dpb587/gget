@@ -28,7 +28,7 @@ func (r *CommitRef) CanonicalRef() service.Ref {
 	return r.ref
 }
 
-func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.Resource) ([]service.ResolvedResource, error) {
+func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.ResourceName) ([]service.ResolvedResource, error) {
 	switch resourceType {
 	case service.ArchiveResourceType:
 		return r.resolveArchiveResource(ctx, resource)
@@ -39,7 +39,7 @@ func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.Re
 	return nil, fmt.Errorf("unsupported resource type for commit ref: %s", resourceType)
 }
 
-func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service.Resource) ([]service.ResolvedResource, error) {
+func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service.ResourceName) ([]service.ResolvedResource, error) {
 	candidates := []string{
 		fmt.Sprintf("%s.tar.gz", r.archiveFileBase),
 		fmt.Sprintf("%s.zip", r.archiveFileBase),
@@ -66,7 +66,7 @@ func (r *CommitRef) resolveArchiveResource(ctx context.Context, resource service
 	return res, nil
 }
 
-func (r *CommitRef) resolveBlobResource(ctx context.Context, resource service.Resource) ([]service.ResolvedResource, error) {
+func (r *CommitRef) resolveBlobResource(ctx context.Context, resource service.ResourceName) ([]service.ResolvedResource, error) {
 	var res []service.ResolvedResource
 
 	// get the full tree
