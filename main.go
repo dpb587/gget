@@ -55,7 +55,7 @@ func main() {
 					fatal(errors.Wrap(err, "parsing app origin"))
 				}
 
-				svc := github.NewService(cmd.Runtime.Logger(), github.NewClientFactory(cmd.Runtime.Logger(), cmd.Runtime.RoundTripLogger))
+				svc := github.NewService(cmd.Runtime.Logger(), github.NewClientFactory(cmd.Runtime.Logger(), cmd.Runtime.NewHTTPClient))
 				res, err := svc.ResolveRef(context.Background(), service.LookupRef{Ref: ref})
 				if err != nil {
 					fatal(errors.Wrap(err, "resolving ref"))

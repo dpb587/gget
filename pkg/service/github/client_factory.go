@@ -2,11 +2,9 @@ package github
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/bgentry/go-netrc/netrc"
 	"github.com/dpb587/gget/pkg/service"
@@ -20,62 +18,46 @@ import (
 type roundTripTransformer func(http.RoundTripper) http.RoundTripper
 
 type ClientFactory struct {
-	log              *logrus.Logger
-	roundTripFactory roundTripTransformer
+	log               *logrus.Logger
+	httpClientFactory func() *http.Client
 }
 
-func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer) *ClientFactory {
+func NewClientFactory(log *logrus.Logger, httpClientFactory func() *http.Client) *ClientFactory {
 	return &ClientFactory{
-		log:              log,
-		roundTripFactory: roundTripFactory,
+		log:               log,
+		httpClientFactory: httpClientFactory,
 	}
 }
 
 func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*github.Client, error) {
-	var tc *http.Client
+	var tokenSource oauth2.TokenSource
 
 	if v := os.Getenv("GITHUB_TOKEN"); v != "" {
 		cf.log.Infof("found authentication for %s: env GITHUB_TOKEN", lookupRef.Ref.Server)
 
-		tc = oauth2.NewClient(
-			ctx,
-			oauth2.StaticTokenSource(
-				&oauth2.Token{AccessToken: v},
-			),
-		)
+		tokenSource = oauth2.StaticTokenSource(&oauth2.Token{AccessToken: v})
 	} else {
 		var err error
 
-		tc, err = cf.loadNetrc(ctx, lookupRef)
+		tokenSource, err = cf.loadNetrc(ctx, lookupRef)
 		if err != nil {
 			return nil, errors.Wrap(err, "loading auth from netrc")
 		}
 	}
 
-	if tc == nil {
-		tc = &http.Client{
-			Timeout: 30 * time.Second,
-			Transport: &http.Transport{
-				Dial: (&net.Dialer{
-					Timeout:   30 * time.Second,
-					KeepAlive: 30 * time.Second,
-				}).Dial,
-				IdleConnTimeout:       15 * time.Second,
-				TLSHandshakeTimeout:   15 * time.Second,
-				ResponseHeaderTimeout: 15 * time.Second,
-				ExpectContinueTimeout: 5 * time.Second,
-			},
+	httpClient := cf.httpClientFactory()
+
+	if tokenSource != nil {
+		httpClient.Transport = &oauth2.Transport{
+			Base:   httpClient.Transport,
+			Source: oauth2.ReuseTokenSource(nil, tokenSource),
 		}
 	}
 
-	if cf.roundTripFactory != nil {
-		tc.Transport = cf.roundTripFactory(tc.Transport)
-	}
-
-	return github.NewClient(tc), nil
+	return github.NewClient(httpClient), nil
 }
 
-func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupRef) (*http.Client, error) {
+func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupRef) (oauth2.TokenSource, error) {
 	netrcPath := os.Getenv("NETRC")
 	if netrcPath == "" {
 		var err error
@@ -110,12 +92,5 @@ func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupR
 
 	cf.log.Infof("found authentication for %s: netrc %s", lookupRef.Ref.Server, netrcPath)
 
-	res := oauth2.NewClient(
-		ctx,
-		oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: machine.Password},
-		),
-	)
-
-	return res, nil
+	return oauth2.StaticTokenSource(&oauth2.Token{AccessToken: machine.Password}), nil
 }

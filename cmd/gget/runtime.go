@@ -1,8 +1,10 @@
 package gget
 
 import (
+	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/dpb587/gget/pkg/app"
 	"github.com/dpb587/gget/pkg/cli/opt"
@@ -16,8 +18,9 @@ type Runtime struct {
 	Help    bool            `long:"help" short:"h" description:"show documentation of this command"`
 	Version *opt.Constraint `long:"version" description:"show version of this command (optionally verifying a constraint)" optional:"true" optional-value:"*" value-name:"[CONSTRAINT]"`
 
-	app    app.Version
-	logger *logrus.Logger
+	app        app.Version
+	logger     *logrus.Logger
+	httpClient *http.Client
 }
 
 func NewRuntime(app app.Version) *Runtime {
@@ -51,14 +54,23 @@ func (r *Runtime) Logger() *logrus.Logger {
 	return r.logger
 }
 
-func (r *Runtime) RoundTripLogger(rt http.RoundTripper) http.RoundTripper {
-	if rt == nil {
-		rt = http.DefaultTransport
-	}
-
-	return roundTripLogger{
-		l:  r.logger,
-		rt: rt,
+func (r *Runtime) NewHTTPClient() *http.Client {
+	return &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: roundTripLogger{
+			l: r.Logger(),
+			rt: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				Dial: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+				}).Dial,
+				IdleConnTimeout:       15 * time.Second,
+				TLSHandshakeTimeout:   15 * time.Second,
+				ResponseHeaderTimeout: 15 * time.Second,
+				ExpectContinueTimeout: 5 * time.Second,
+			},
+		},
 	}
 }
 

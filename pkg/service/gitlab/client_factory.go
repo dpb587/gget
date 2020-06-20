@@ -2,11 +2,9 @@ package gitlab
 
 import (
 	"context"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/bgentry/go-netrc/netrc"
 	"github.com/dpb587/gget/pkg/service"
@@ -19,19 +17,18 @@ import (
 type roundTripTransformer func(http.RoundTripper) http.RoundTripper
 
 type ClientFactory struct {
-	log              *logrus.Logger
-	roundTripFactory func(http.RoundTripper) http.RoundTripper
+	log               *logrus.Logger
+	httpClientFactory func() *http.Client
 }
 
-func NewClientFactory(log *logrus.Logger, roundTripFactory roundTripTransformer) *ClientFactory {
+func NewClientFactory(log *logrus.Logger, httpClientFactory func() *http.Client) *ClientFactory {
 	return &ClientFactory{
-		log:              log,
-		roundTripFactory: roundTripFactory,
+		log:               log,
+		httpClientFactory: httpClientFactory,
 	}
 }
 
 func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*gitlab.Client, error) {
-	var tc *http.Client
 	var token string
 
 	if v := os.Getenv("GITLAB_TOKEN"); v != "" {
@@ -47,25 +44,7 @@ func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*
 		}
 	}
 
-	tc = &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-			}).Dial,
-			IdleConnTimeout:       15 * time.Second,
-			TLSHandshakeTimeout:   15 * time.Second,
-			ResponseHeaderTimeout: 15 * time.Second,
-			ExpectContinueTimeout: 5 * time.Second,
-		},
-	}
-
-	if cf.roundTripFactory != nil {
-		tc.Transport = cf.roundTripFactory(tc.Transport)
-	}
-
-	res, err := gitlab.NewClient(token, gitlab.WithHTTPClient(tc))
+	res, err := gitlab.NewClient(token, gitlab.WithHTTPClient(cf.httpClientFactory()))
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}

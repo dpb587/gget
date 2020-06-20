@@ -92,14 +92,14 @@ func (c *Command) RefResolver() (service.RefResolver, error) {
 	if c.Service == "" || c.Service == "github" {
 		resolvers = append(
 			resolvers,
-			github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.RoundTripLogger)),
+			github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
 		)
 	}
 
 	if c.Service == "" || c.Service == "gitlab" {
 		resolvers = append(
 			resolvers,
-			gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.RoundTripLogger)),
+			gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
 		)
 	}
 
