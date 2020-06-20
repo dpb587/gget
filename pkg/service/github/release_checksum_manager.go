@@ -2,121 +2,76 @@ package github
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
+	"io"
+	"path/filepath"
 	"strings"
 
 	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/checksum/parser"
 	"github.com/dpb587/gget/pkg/service/github/asset"
 	"github.com/google/go-github/v29/github"
-	"github.com/pkg/errors"
 )
 
-type ReleaseChecksumManager struct {
-	client            *github.Client
-	releaseOwner      string
-	releaseRepository string
-	release           *github.RepositoryRelease
+func NewReleaseChecksumManager(client *github.Client, releaseOwner, releaseRepository string, release *github.RepositoryRelease) checksum.Manager {
+	literalManager := checksum.NewInMemoryManager()
+	var deferredManagers []checksum.Manager
 
-	known            *checksum.InMemoryManager
-	attemptedDynamic map[string]struct{}
-}
+	// parse from release notes
+	parser.ImportMarkdown(literalManager, []byte(release.GetBody()))
 
-var _ checksum.Manager = &ReleaseChecksumManager{}
-
-func NewReleaseChecksumManager(client *github.Client, releaseOwner, releaseRepository string, release *github.RepositoryRelease) *ReleaseChecksumManager {
-	return &ReleaseChecksumManager{
-		client:            client,
-		releaseOwner:      releaseOwner,
-		releaseRepository: releaseRepository,
-		release:           release,
-		attemptedDynamic:  map[string]struct{}{},
-	}
-}
-
-func (cm *ReleaseChecksumManager) GetChecksum(ctx context.Context, resource string) (checksum.Checksum, bool, error) {
-	err := cm.requireOptimistic(ctx)
-	if err != nil {
-		return checksum.Checksum{}, false, err
-	}
-
-	res, found, _ := cm.known.GetChecksum(ctx, resource) // never errs
-	if found {
-		return res, true, nil
-	}
-
-	if _, found := cm.attemptedDynamic[resource]; !found {
-		cm.attemptedDynamic[resource] = struct{}{}
-
-		for _, releaseAsset := range cm.release.Assets {
-			switch releaseAsset.GetName() {
-			case fmt.Sprintf("%s.sha1", resource), fmt.Sprintf("%s.sha256", resource), fmt.Sprintf("%s.sha512", resource):
-				// good
-			default:
-				continue
-			}
-
-			err := cm.loadReleaseAsset(ctx, releaseAsset)
-			if err != nil {
-				// TODO log errors.Wrap(err, "loading checksum asset")
-				continue
-			}
-		}
-
-		return cm.GetChecksum(ctx, resource)
-	}
-
-	return checksum.Checksum{}, false, nil
-}
-
-func (cm *ReleaseChecksumManager) requireOptimistic(ctx context.Context) error {
-	if cm.known != nil {
-		return nil
-	}
-
-	cm.known = checksum.NewInMemoryManager()
-
-	parser.ImportMarkdown(cm.known, cm.release.GetBody())
-
-	for _, releaseAsset := range cm.release.Assets {
-		name := strings.ToLower(releaseAsset.GetName())
-
-		if name == "sha256sums.txt" {
-			// useful
-		} else if name == "sha512sums.txt" {
-			// useful
-		} else if strings.HasSuffix(name, "checksums.txt") {
-			// useful
-		} else {
+	// checksums from convention-based file names
+	for _, releaseAsset := range release.Assets {
+		algorithm, resource, useful := checkReleaseAssetChecksumBehavior(releaseAsset)
+		if !useful {
 			continue
 		}
 
-		err := cm.loadReleaseAsset(ctx, releaseAsset)
-		if err != nil {
-			// TODO log errors.Wrap(err, "loading checksum asset")
-			continue
+		opener := newReleaseAssetChecksumOpener(client, releaseOwner, releaseRepository, releaseAsset)
+
+		if resource != "" {
+			literalManager.AddChecksum(
+				resource,
+				checksum.NewDeferredChecksum(
+					parser.NewDeferredManager(checksum.NewInMemoryAliasManager(resource), opener),
+					resource,
+					algorithm,
+				),
+			)
+		} else if algorithm != "" {
+			deferredManagers = append(deferredManagers, parser.NewDeferredManager(literalManager, opener))
 		}
 	}
 
-	return nil
+	return checksum.NewMultiManager(append([]checksum.Manager{literalManager}, deferredManagers...)...)
 }
 
-func (cm *ReleaseChecksumManager) loadReleaseAsset(ctx context.Context, releaseAsset github.ReleaseAsset) error {
-	resource := asset.NewResource(cm.client, cm.releaseOwner, cm.releaseRepository, releaseAsset, cm.known)
-	fh, err := resource.Open(ctx)
-	if err != nil {
-		return errors.Wrap(err, "opening resource")
+func checkReleaseAssetChecksumBehavior(releaseAsset github.ReleaseAsset) (string, string, bool) {
+	name := releaseAsset.GetName()
+	nameLower := strings.ToLower(name)
+	ext := filepath.Ext(releaseAsset.GetName())
+	extLower := strings.ToLower(strings.TrimPrefix(ext, "."))
+
+	if extLower == "md5" || extLower == "sha1" || extLower == "sha256" || extLower == "sha512" {
+		return extLower, strings.TrimSuffix(name, ext), true
+	} else if nameLower == "md5sums" || nameLower == "md5sums.txt" {
+		return "md5", "", true
+	} else if nameLower == "sha1sums" || nameLower == "sha1sums.txt" {
+		return "sha1", "", true
+	} else if nameLower == "sha256sums" || nameLower == "sha256sums.txt" {
+		return "sha256", "", true
+	} else if nameLower == "sha512sums" || nameLower == "sha512sums.txt" {
+		return "sha512", "", true
+	} else if nameLower == "CHECKSUM" || nameLower == "CHECKSUMS" || strings.HasSuffix(nameLower, "checksums.txt") {
+		return "unknown", "", true
 	}
 
-	defer fh.Close()
+	return "", "", false
+}
 
-	buf, err := ioutil.ReadAll(fh)
-	if err != nil {
-		return errors.Wrap(err, "reading")
+func newReleaseAssetChecksumOpener(client *github.Client, releaseOwner, releaseRepository string, releaseAsset github.ReleaseAsset) func(context.Context) (io.ReadCloser, error) {
+	return func(ctx context.Context) (io.ReadCloser, error) {
+		resource := asset.NewResource(client, releaseOwner, releaseRepository, releaseAsset, nil) // TODO pass shared checksum manager
+
+		return resource.Open(ctx)
 	}
-
-	parser.ImportLines(cm.known, string(buf))
-
-	return nil
 }

@@ -24,11 +24,6 @@ func (dpi *TempFileTarget) GetProgressParams() (int64, decor.Decorator) {
 	return 0, nil
 }
 
-func (dpi *TempFileTarget) Prepare() error {
-
-	return nil
-}
-
 func (dpi *TempFileTarget) Write(p []byte) (int, error) {
 	if dpi.tmpfile == nil {
 		p, err := ioutil.TempFile(dpi.Tmpdir, ".gget-*")

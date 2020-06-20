@@ -1,28 +1,40 @@
 package checksum
 
-import "context"
+import (
+	"context"
+)
 
 type InMemoryManager struct {
-	checksums map[string]Checksum
+	resourceChecksums map[string][]Checksum
 }
 
 var _ Manager = &InMemoryManager{}
 
-func NewInMemoryManager() *InMemoryManager {
+func NewInMemoryManager() WriteableManager {
 	return &InMemoryManager{
-		checksums: map[string]Checksum{},
+		resourceChecksums: map[string][]Checksum{},
 	}
 }
 
-func (m *InMemoryManager) GetChecksum(ctx context.Context, resource string) (Checksum, bool, error) {
-	res, found := m.checksums[resource]
+func (m *InMemoryManager) GetChecksum(ctx context.Context, resource string) (Checksum, error) {
+	resourceChecksums, found := m.resourceChecksums[resource]
 	if !found {
-		return Checksum{}, false, nil
+		return nil, nil
 	}
 
-	return res, true, nil
+	return StrongestChecksum(resourceChecksums), nil
 }
 
-func (m *InMemoryManager) SetChecksum(resource string, checksum Checksum) {
-	m.checksums[resource] = checksum
+func (m *InMemoryManager) Resources() []string {
+	var res []string
+
+	for resource := range m.resourceChecksums {
+		res = append(res, resource)
+	}
+
+	return res
+}
+
+func (m *InMemoryManager) AddChecksum(resource string, checksum Checksum) {
+	m.resourceChecksums[resource] = append(m.resourceChecksums[resource], checksum)
 }

@@ -47,9 +47,17 @@ func (r *ReleaseRef) resolveAssetResource(ctx context.Context, resource service.
 
 		res = append(
 			res,
-			asset.NewResource(r.client, r.ref.Owner, r.ref.Repository, candidate, r.checksumManager),
+			asset.NewResource(r.client, r.ref.Owner, r.ref.Repository, candidate, r.requireChecksumManager()),
 		)
 	}
 
 	return res, nil
+}
+
+func (r *ReleaseRef) requireChecksumManager() checksum.Manager {
+	if r.checksumManager == nil {
+		r.checksumManager = NewReleaseChecksumManager(r.client, r.ref.Owner, r.ref.Repository, r.release)
+	}
+
+	return r.checksumManager
 }

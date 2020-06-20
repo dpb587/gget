@@ -9,30 +9,26 @@ import (
 	"hash"
 )
 
-func GuessChecksum(cs string) (Checksum, error) {
+func GuessChecksum(expected []byte) (Checksum, error) {
 	var hasher func() hash.Hash
-	var name string
+	var algorithm string
 
-	switch len(cs) {
-	case 32:
-		name = "md5"
+	switch len(expected) {
+	case 16:
+		algorithm = "md5"
 		hasher = md5.New
-	case 40:
-		name = "sha1"
+	case 20:
+		algorithm = "sha1"
 		hasher = sha1.New
-	case 64:
-		name = "sha256"
+	case 32:
+		algorithm = "sha256"
 		hasher = sha256.New
-	case 128:
-		name = "sha512"
+	case 64:
+		algorithm = "sha512"
 		hasher = sha512.New
 	default:
-		return Checksum{}, fmt.Errorf("unrecognized checksum: %s", cs)
+		return nil, fmt.Errorf("unrecognized hash: %s", expected)
 	}
 
-	return Checksum{
-		Type:   name,
-		Bytes:  cs,
-		Hasher: hasher,
-	}, nil
+	return NewHashChecksum(algorithm, expected, hasher), nil
 }

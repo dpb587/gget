@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/hex"
 	"regexp"
 
 	"github.com/dpb587/gget/pkg/checksum"
@@ -8,19 +9,26 @@ import (
 
 var codeindent = regexp.MustCompile("    ([a-f0-9]{40,64})\\s+([^\\s]+)")
 
-func ImportMarkdownCodeindent(m checksum.ManagerSetter, content string) {
-	contentSubmatch := codeindent.FindAllStringSubmatch(content, -1)
+func ImportMarkdownCodeindent(m checksum.WriteableManager, content []byte) {
+	contentSubmatch := codeindent.FindAllStringSubmatch(string(content), -1)
 
 	if len(contentSubmatch) == 0 {
 		return
 	}
 
 	for _, match := range contentSubmatch {
-		checksum, err := checksum.GuessChecksum(match[1])
+		hashBytes, err := hex.DecodeString(match[1])
 		if err != nil {
+			// TODO log?
 			continue
 		}
 
-		m.SetChecksum(match[2], checksum)
+		checksum, err := checksum.GuessChecksum(hashBytes)
+		if err != nil {
+			// TODO log?
+			continue
+		}
+
+		m.AddChecksum(match[2], checksum)
 	}
 }

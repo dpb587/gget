@@ -257,11 +257,10 @@ func (s Service) resolveTagReference(ctx context.Context, client *github.Client,
 
 	if release != nil {
 		res = &ReleaseRef{
-			client:          client,
-			ref:             ref,
-			release:         release,
-			targetRef:       res,
-			checksumManager: NewReleaseChecksumManager(client, ref.Owner, ref.Repository, release),
+			client:    client,
+			ref:       ref,
+			release:   release,
+			targetRef: res,
 		}
 	}
 

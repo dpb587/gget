@@ -48,18 +48,21 @@ func (r *Resource) GetTransferSteps(ctx context.Context) ([]transfer.Step, error
 		return nil, nil
 	}
 
-	cs, found, err := r.checksumManager.GetChecksum(ctx, r.asset.GetName())
+	cs, err := r.checksumManager.GetChecksum(ctx, r.asset.GetName())
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting checksum of %s", r.asset.GetName())
-	} else if !found {
+	} else if cs == nil {
 		return nil, nil
+	}
+
+	verifier, err := cs.NewVerifier(ctx)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting %s verifier", cs.Algorithm())
 	}
 
 	res := []transfer.Step{
 		&step.VerifyChecksum{
-			Algo:     cs.Type,
-			Expected: cs.Bytes,
-			Actual:   cs.Hasher(),
+			Verifier: verifier,
 		},
 	}
 

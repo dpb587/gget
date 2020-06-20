@@ -125,6 +125,27 @@ The following services are supported through their APIs:
  * **GitHub** – personal access tokens may be set via `$GITHUB_TOKEN` or a `.netrc` password
  * **GitLab** – personal access tokens may be set via `$GITLAB_TOKEN` or a `.netrc` password
 
+## Technical Notes
+
+### Checksum Verification
+
+When downloading files, `gget` attempts to validate checksums when they are found for files (erroring if they do not match). Since checksums are generally not an official feature for repository assets, this is a convention-based approach.
+
+ * Algorithms: `sha512`, `sha256`, `sha1`, `md5`
+ * Format:
+    * `*sum` command output -- `{checksum}  {file}`
+ * Sources:
+    * release notes -- code block or code fence
+    * sibling files with an algorithm suffix (case-insensitive) - `*.{algorithm}`
+    * checksum list files (case-insensitive) - `checksum`, `checksums`, `*checksums.txt`, `{algorithm}sum.txt`, `{algorithm}sums.txt`
+
+Some personal recommendations/learnings/preferences:
+
+ * do not use `sha1` or `md5` - they are considered weak (`gget` uses the strongest checksum it finds)
+ * use two spaces instead of one when generating `*sum` command output - it is more widely supported by `*sum --check` tools (although `gget` supports both)
+ * include checksums in the release notes - they are then stored in a different backend than the assets being verified
+ * use a single `checksums.txt` file - for predictable usage and avoiding individual file checksum downloads requiring API requests
+
 ## Alternatives
 
  * `wget`/`curl` -- if you want to manually maintain version download URLs and private signing

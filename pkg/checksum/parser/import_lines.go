@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"encoding/hex"
 	"regexp"
 	"strings"
 
@@ -9,8 +10,8 @@ import (
 
 var lines = regexp.MustCompile(`^([a-f0-9]{40,64})\s+([^\s]+)$`)
 
-func ImportLines(m checksum.ManagerSetter, content string) {
-	checksums := strings.Split(strings.TrimSpace(content), "\n")
+func ImportLines(m checksum.WriteableManager, content []byte) {
+	checksums := strings.Split(strings.TrimSpace(string(content)), "\n")
 
 	for _, checksumLine := range checksums {
 		checksumSplit := strings.Fields(strings.TrimSpace(checksumLine))
@@ -22,11 +23,18 @@ func ImportLines(m checksum.ManagerSetter, content string) {
 			continue
 		}
 
-		checksum, err := checksum.GuessChecksum(checksumSplit[0])
+		hashBytes, err := hex.DecodeString(checksumSplit[0])
 		if err != nil {
+			// TODO log?
 			continue
 		}
 
-		m.SetChecksum(checksumSplit[1], checksum)
+		checksum, err := checksum.GuessChecksum(hashBytes)
+		if err != nil {
+			// TODO log?
+			continue
+		}
+
+		m.AddChecksum(checksumSplit[1], checksum)
 	}
 }
