@@ -12,7 +12,8 @@ import (
 )
 
 var _ = Describe("Markdown", func() {
-	var csm *checksum.InMemoryManager
+	var csm checksum.WriteableManager
+	var ctx context.Context
 
 	BeforeEach(func() {
 		csm = checksum.NewInMemoryManager()
@@ -20,27 +21,33 @@ var _ = Describe("Markdown", func() {
 
 	Context("code fences", func() {
 		It("parses", func() {
-			ImportMarkdownCodefence(csm, strings.Join([]string{
+			ImportMarkdownCodefence(csm, []byte(strings.Join([]string{
 				"dear release note readers. here are your checksums",
 				"```",
-				"bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320  gget-0.1.1-darwin-amd64",
-				"9b0731100e631ca92d5f6979f30e3e3cc275c84f466647462d7afa0819801348  gget-0.1.1-linux-amd64",
+				"9534cebfed045f466d446f45ff1d76e38aa94941ccdbbcd8a8b82e51657a579e  gget-0.1.1-darwin-amd64",
+				"9d61c2edcdb8ed71d58d94970d7ef4aeacbe1ac4bce4aecb06e2f3d804caee4b  gget-0.1.1-linux-amd64",
 				"```",
-			}, "\n"))
+			}, "\n")))
 
-			cs, found, err := csm.GetChecksum(context.Background(), "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320"))
+			Expect(cs).ToNot(BeNil())
 
-			cs, found, err = csm.GetChecksum(context.Background(), "gget-0.1.1-linux-amd64")
+			csv, err := cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
+
+			cs, err = csm.GetChecksum(ctx, "gget-0.1.1-linux-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("9b0731100e631ca92d5f6979f30e3e3cc275c84f466647462d7afa0819801348"))
+			Expect(csv).ToNot(BeNil())
+
+			csv, err = cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-linux-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
 
 		It("ignores unexpected data", func() {
-			ImportMarkdownCodefence(csm, strings.Join([]string{
+			ImportMarkdownCodefence(csm, []byte(strings.Join([]string{
 				"dear release note readers. here are your checksums",
 				"",
 				"```",
@@ -50,52 +57,65 @@ var _ = Describe("Markdown", func() {
 				"some other note",
 				"",
 				"```",
-				"bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320  gget-0.1.1-darwin-amd64",
+				"9534cebfed045f466d446f45ff1d76e38aa94941ccdbbcd8a8b82e51657a579e  gget-0.1.1-darwin-amd64",
 				"```",
-			}, "\n"))
+			}, "\n")))
 
-			cs, found, err := csm.GetChecksum(context.Background(), "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320"))
+			Expect(cs).ToNot(BeNil())
+
+			csv, err := cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
 	})
 
 	Context("code indent", func() {
 		It("parses", func() {
-			ImportMarkdownCodeindent(csm, strings.Join([]string{
+			ImportMarkdownCodeindent(csm, []byte(strings.Join([]string{
 				"dear release note readers. here are your checksums",
 				"",
-				"    bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320  gget-0.1.1-darwin-amd64",
-				"    9b0731100e631ca92d5f6979f30e3e3cc275c84f466647462d7afa0819801348  gget-0.1.1-linux-amd64",
-			}, "\n"))
+				"    9534cebfed045f466d446f45ff1d76e38aa94941ccdbbcd8a8b82e51657a579e  gget-0.1.1-darwin-amd64",
+				"    9d61c2edcdb8ed71d58d94970d7ef4aeacbe1ac4bce4aecb06e2f3d804caee4b  gget-0.1.1-linux-amd64",
+			}, "\n")))
 
-			cs, found, err := csm.GetChecksum(context.Background(), "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320"))
+			Expect(cs).ToNot(BeNil())
 
-			cs, found, err = csm.GetChecksum(context.Background(), "gget-0.1.1-linux-amd64")
+			csv, err := cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
+
+			cs, err = csm.GetChecksum(ctx, "gget-0.1.1-linux-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("9b0731100e631ca92d5f6979f30e3e3cc275c84f466647462d7afa0819801348"))
+			Expect(csv).ToNot(BeNil())
+
+			csv, err = cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-linux-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
 
 		It("ignores unexpected data", func() {
-			ImportMarkdownCodeindent(csm, strings.Join([]string{
+			ImportMarkdownCodeindent(csm, []byte(strings.Join([]string{
 				"dear release note readers. here are your checksums",
 				"",
 				"    other",
 				"",
 				"some other note",
 				"",
-				"    bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320  gget-0.1.1-darwin-amd64",
-			}, "\n"))
+				"    9534cebfed045f466d446f45ff1d76e38aa94941ccdbbcd8a8b82e51657a579e  gget-0.1.1-darwin-amd64",
+				"```",
+			}, "\n")))
 
-			cs, found, err := csm.GetChecksum(context.Background(), "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
 			Expect(err).ToNot(HaveOccurred())
-			Expect(found).To(BeTrue())
-			Expect(cs.Bytes).To(Equal("bc894542e78dace00fc0357d4c591cc1e2193877636ad5b9da3c5dfc9b790320"))
+			Expect(cs).ToNot(BeNil())
+
+			csv, err := cs.NewVerifier(ctx)
+			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
+			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
 	})
 })

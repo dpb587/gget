@@ -85,7 +85,7 @@ func (rtl roundTripLogger) RoundTrip(req *http.Request) (resp *http.Response, er
 	res, err := rtl.rt.RoundTrip(req)
 
 	if res == nil {
-		rtl.l.Info("http: %s %s (response error)", req.Method, req.URL.String())
+		rtl.l.Infof("http: %s %s (response error)", req.Method, req.URL.String())
 	} else {
 		rtl.l.Infof("http: %s %s (status: %s)", req.Method, req.URL.String(), res.Status)
 
