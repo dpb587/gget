@@ -43,10 +43,17 @@ func main() {
 	if err != nil {
 		fatal(err)
 	} else if cmd.Runtime.Help {
-		buf := &bytes.Buffer{}
-		parser.WriteHelp(buf)
+		helpBuf := &bytes.Buffer{}
+		parser.WriteHelp(helpBuf)
+		help := helpBuf.String()
 
-		fmt.Print(strings.Replace(buf.String(), ") (", "; ", -1))
+		// imply origin is required (optional to support --version, -h)
+		help = strings.Replace(help, "[HOST/OWNER/REPOSITORY[@REF]]", "HOST/OWNER/REPOSITORY[@REF]", -1)
+
+		// join conventional paren groups
+		help = strings.Replace(help, ") (", "; ", -1)
+
+		fmt.Print(help)
 		fmt.Printf("\n")
 
 		return

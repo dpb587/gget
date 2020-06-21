@@ -55,15 +55,14 @@ Use the `blob` type to download individual repository files. Branch and commit r
     gget --type=blob github.com/stedolan/jq@jq-1.5-branch README.md
 
 Use `--help` to see all options and learn more about advanced usage.
-
     Usage:
-      gget HOST/OWNER/REPOSITORY[@REF] [LOCAL-PATH=]RESOURCE-GLOB...
+      gget HOST/OWNER/REPOSITORY[@REF] [[LOCAL-PATH=]RESOURCE-GLOB...]
 
     Runtime Options:
       -q, --quiet                             suppress runtime status reporting
       -v, --verbose                           increase logging verbosity (multiple)
       -h, --help                              show documentation of this command
-          --version=[CONSTRAINT]              show version of this command (optionally verifying a constraint)
+          --version=[CONSTRAINT]              show version of this command (with optional constraint to validate)
 
     Repository Options:
           --service=NAME                      specific git service to use (values: github, gitlab; default: auto-detect)
@@ -133,9 +132,9 @@ When downloading files, `gget` attempts to validate checksums when they are foun
 
  * Algorithms: `sha512`, `sha256`, `sha1`, `md5`
  * Format:
-    * `*sum` command output -- `{checksum}  {file}`
+    * `*sum` command output - `{checksum}  {file}`
  * Sources:
-    * release notes -- code block or code fence
+    * release notes - code block or code fence
     * sibling files with an algorithm suffix (case-insensitive) - `*.{algorithm}`
     * checksum list files (case-insensitive) - `checksum`, `checksums`, `*checksums.txt`, `{algorithm}sum.txt`, `{algorithm}sums.txt`
 
