@@ -7,21 +7,17 @@ import (
 
 type Constraint struct {
 	*semver.Constraints
-	RawConstraint string
+	RawValue string
 }
 
 func (o *Constraint) UnmarshalFlag(data string) error {
-	// having this early allows a hack where the global --version= value
-	// can be non-compliant, but it does its own validation before the
-	// rest of go-flags errors are emitted
-	o.RawConstraint = data
-
 	con, err := semver.NewConstraint(data)
 	if err != nil {
 		return errors.Wrap(err, "parsing version constraint")
 	}
 
 	o.Constraints = con
+	o.RawValue = data
 
 	return nil
 }

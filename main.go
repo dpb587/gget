@@ -17,8 +17,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-var appName = "gget"
-var appSemver, appCommit, appBuilt, appOrigin string
+var (
+	appName                        = "gget"
+	appOrigin                      = "github.com/dpb587/gget"
+	appSemver, appCommit, appBuilt string
+)
 
 func main() {
 	v := app.MustVersion(appName, appSemver, appCommit, appBuilt)
@@ -37,7 +40,9 @@ func main() {
 	}
 
 	_, err := parser.Parse()
-	if cmd.Runtime.Help {
+	if err != nil {
+		fatal(err)
+	} else if cmd.Runtime.Help {
 		buf := &bytes.Buffer{}
 		parser.WriteHelp(buf)
 
@@ -46,46 +51,49 @@ func main() {
 
 		return
 	} else if cmd.Runtime.Version != nil {
-		if cmd.Runtime.Version.RawConstraint == "*" {
-			app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
-		} else {
-			if cmd.Runtime.Version.RawConstraint == "latest" {
+		if cmd.Runtime.Version.IsLatest {
+			err := func() error {
 				ref, err := service.ParseRefString(appOrigin)
 				if err != nil {
-					fatal(errors.Wrap(err, "parsing app origin"))
+					return errors.Wrap(err, "parsing app origin")
 				}
 
 				svc := github.NewService(cmd.Runtime.Logger(), github.NewClientFactory(cmd.Runtime.Logger(), cmd.Runtime.NewHTTPClient))
 				res, err := svc.ResolveRef(context.Background(), service.LookupRef{Ref: ref})
 				if err != nil {
-					fatal(errors.Wrap(err, "resolving ref"))
+					return errors.Wrap(err, "resolving app origin")
 				}
 
 				err = cmd.Runtime.Version.UnmarshalFlag(res.CanonicalRef().Ref)
 				if err != nil {
-					fatal(errors.Wrap(err, "parsing constraint"))
+					return errors.Wrap(err, "parsing version constraint")
 				}
-			}
 
-			ver, err := semver.NewVersion(v.Semver)
+				return nil
+			}()
 			if err != nil {
-				fatal(errors.Wrap(err, "parsing application version"))
-			}
-
-			if !cmd.Runtime.Version.Check(ver) {
-				if cmd.Runtime.Quiet {
-					os.Exit(1)
-				}
-
-				fatal(fmt.Errorf("version '%s' does not satisfy constraint: %s", v.Semver, cmd.Runtime.Version.RawConstraint))
-			} else if !cmd.Runtime.Quiet {
-				app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
+				fatal(errors.Wrap(err, "checking latest app version"))
 			}
 		}
 
+		ver, err := semver.NewVersion(v.Semver)
+		if err != nil {
+			fatal(errors.Wrap(err, "parsing application version"))
+		}
+
+		if !cmd.Runtime.Quiet {
+			app.WriteVersion(os.Stdout, os.Args[0], v, len(cmd.Runtime.Verbose))
+		}
+
+		if !cmd.Runtime.Version.Constraint.Check(ver) {
+			if cmd.Runtime.Quiet {
+				os.Exit(1)
+			}
+
+			fatal(errors.Wrapf(fmt.Errorf("constraint not met: %s", cmd.Runtime.Version.Constraint.RawValue), "verifying application version"))
+		}
+
 		return
-	} else if err != nil {
-		fatal(err)
 	}
 
 	if err = cmd.Execute(nil); err != nil {

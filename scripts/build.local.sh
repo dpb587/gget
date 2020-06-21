@@ -40,7 +40,6 @@ for os in $os_list ; do
         -X main.appSemver=$version
         -X main.appCommit=$commit
         -X main.appBuilt=$built
-        -X main.appOrigin=github.com/dpb587/gget
       " \
       -o tmp/build/$name \
       .

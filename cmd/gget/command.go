@@ -48,7 +48,7 @@ type Command struct {
 	*RepositoryOptions `group:"Repository Options"`
 	*ResourceOptions   `group:"Resource Options"`
 	*DownloadOptions   `group:"Download Options"`
-	Args               CommandArgs `positional-args:"true" required:"true"`
+	Args               CommandArgs `positional-args:"true"`
 }
 
 type CommandArgs struct {
@@ -117,7 +117,7 @@ func (c *Command) Execute(_ []string) error {
 	c.applySettings()
 
 	if c.Args.Ref.Repository == "" {
-		return fmt.Errorf("missing argument: repository")
+		return fmt.Errorf("missing argument: repository reference")
 	}
 
 	refResolver, err := c.RefResolver()
