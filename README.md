@@ -55,6 +55,7 @@ Use the `blob` type to download individual repository files. Branch and commit r
     gget --type=blob github.com/stedolan/jq@jq-1.5-branch README.md
 
 Use `--help` to see all options and learn more about advanced usage.
+
     Usage:
       gget HOST/OWNER/REPOSITORY[@REF] [[LOCAL-PATH=]RESOURCE-GLOB...]
 
