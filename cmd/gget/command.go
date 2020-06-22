@@ -38,9 +38,11 @@ type ResourceOptions struct {
 
 type DownloadOptions struct {
 	CD         string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
+	DumpInfo   string                  `long:"dump-info" description:"write details about the download plan to file (or - for STDOUT)" value-name:"PATH"`
 	Executable opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	Stdout     bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
+	NoDownload bool                    `long:"no-download" description:"do not download matched resources"`
 	Parallel   int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
+	Stdout     bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
 }
 
 type Command struct {
@@ -82,6 +84,16 @@ func (c *Command) applySettings() {
 			}
 
 			c.Args.Resources[resourceIdx].LocalPath = filepath.Join(c.CD, resource.LocalPath)
+		}
+	}
+
+	{ // TODO(1.x) remove
+		if c.ShowRef {
+			c.NoDownload = true
+		}
+
+		if c.ShowResources {
+			c.NoDownload = true
 		}
 	}
 }
@@ -140,11 +152,6 @@ func (c *Command) Execute(_ []string) error {
 		for _, metadata := range ref.GetMetadata() {
 			fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
 		}
-
-		if !c.ShowResources {
-			// exit early unless they also want to see resources
-			return nil
-		}
 	}
 
 	resourceMap := map[string]service.ResolvedResource{}
@@ -191,7 +198,9 @@ func (c *Command) Execute(_ []string) error {
 		for _, result := range results {
 			fmt.Println(result)
 		}
+	}
 
+	if c.NoDownload {
 		return nil
 	}
 
