@@ -20,25 +20,26 @@ import (
 )
 
 type RepositoryOptions struct {
-	Service string `long:"service" description:"specific git service to use (values: github, gitlab) (default: auto-detect)" value-name:"NAME"`
-
-	RefVersions  opt.ConstraintList `long:"ref-version" description:"version constraint(s) to require of latest (e.g. 4.x)" value-name:"CONSTRAINT"`
 	RefStability []string           `long:"ref-stability" description:"acceptable stability level(s) for latest (values: stable, pre-release, any) (default: stable)" value-name:"STABILITY"`
+	RefVersions  opt.ConstraintList `long:"ref-version" description:"version constraint(s) to require of latest (e.g. 4.x)" value-name:"CONSTRAINT"`
+	Service      string             `long:"service" description:"specific git service to use (values: github, gitlab) (default: auto-detect)" value-name:"NAME"`
 
-	ShowRef bool `long:"show-ref" description:"show resolved repository ref instead of downloading"`
+	// TODO(1.x) remove
+	ShowRef bool `long:"show-ref" description:"show resolved repository ref instead of downloading" hidden:"true"`
 }
 
 type ResourceOptions struct {
-	Type          service.ResourceType    `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
-	IgnoreMissing opt.ResourceMatcherList `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
 	Exclude       opt.ResourceMatcherList `long:"exclude" description:"exclude resource(s) from download (multiple)" value-name:"RESOURCE-GLOB"`
+	IgnoreMissing opt.ResourceMatcherList `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	Type          service.ResourceType    `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
 
-	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading"`
+	// TODO(1.x) remove
+	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading" hidden:"true"`
 }
 
 type DownloadOptions struct {
 	CD         string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
-	DumpInfo   string                  `long:"dump-info" description:"write details about the download plan to file (or - for STDOUT)" value-name:"PATH"`
+	DumpInfo   string                  `long:"dump-info" description:"write details about the download plan to file" value-name:"LOCAL-PATH"`
 	Executable opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
 	NoDownload bool                    `long:"no-download" description:"do not download matched resources"`
 	Parallel   int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
@@ -59,6 +60,10 @@ type CommandArgs struct {
 }
 
 func (c *Command) applySettings() {
+	if v := c.Service; v != "" {
+		c.Args.Ref.Service = v
+	}
+
 	if len(c.Args.Resources) == 0 {
 		c.Args.Resources = opt.ResourceTransferList{
 			{
@@ -98,17 +103,17 @@ func (c *Command) applySettings() {
 	}
 }
 
-func (c *Command) RefResolver() (service.RefResolver, error) {
+func (c *Command) RefResolver(ref service.Ref) (service.RefResolver, error) {
 	var resolvers []service.ConditionalRefResolver
 
-	if c.Service == "" || c.Service == "github" {
+	if ref.Service == "" || ref.Service == github.ServiceName {
 		resolvers = append(
 			resolvers,
 			github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
 		)
 	}
 
-	if c.Service == "" || c.Service == "gitlab" {
+	if ref.Service == "" || ref.Service == gitlab.ServiceName {
 		resolvers = append(
 			resolvers,
 			gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
@@ -117,7 +122,7 @@ func (c *Command) RefResolver() (service.RefResolver, error) {
 
 	switch len(resolvers) {
 	case 0:
-		return nil, fmt.Errorf("unsupported service: %s", c.Service)
+		return nil, fmt.Errorf("unsupported service: %s", ref.Service)
 	case 1:
 		return resolvers[0], nil
 	}
@@ -132,7 +137,7 @@ func (c *Command) Execute(_ []string) error {
 		return fmt.Errorf("missing argument: repository reference")
 	}
 
-	refResolver, err := c.RefResolver()
+	refResolver, err := c.RefResolver(service.Ref(c.Args.Ref))
 	if err != nil {
 		return errors.Wrap(err, "getting ref resolver")
 	}
@@ -148,9 +153,11 @@ func (c *Command) Execute(_ []string) error {
 		return errors.Wrap(err, "resolving ref")
 	}
 
-	if c.ShowRef {
-		for _, metadata := range ref.GetMetadata() {
-			fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
+	{ // TODO(1.x) remove
+		if c.ShowRef {
+			for _, metadata := range ref.GetMetadata() {
+				fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
+			}
 		}
 	}
 
@@ -186,17 +193,74 @@ func (c *Command) Execute(_ []string) error {
 		}
 	}
 
-	if c.ShowResources {
-		var results []string
+	{ // TODO(1.x) remove
+		if c.ShowResources {
+			var results []string
 
-		for _, resource := range resourceMap {
-			results = append(results, resource.GetName())
+			for _, resource := range resourceMap {
+				results = append(results, resource.GetName())
+			}
+
+			sort.Strings(results)
+
+			for _, result := range results {
+				fmt.Println(result)
+			}
+		}
+	}
+
+	if c.DumpInfo != "" {
+		var infoW io.Writer
+		var infoC io.Closer
+
+		if c.DumpInfo == "-" {
+			infoW = os.Stdout
+		} else {
+			fh, err := os.OpenFile(c.DumpInfo, os.O_WRONLY|os.O_CREATE, 0700)
+			if err != nil {
+				return errors.Wrap(err, "opening info file")
+			}
+
+			infoW = fh
+			infoC = fh
 		}
 
-		sort.Strings(results)
+		{ // origin
+			cref := ref.CanonicalRef()
 
-		for _, result := range results {
-			fmt.Println(result)
+			fmt.Fprintf(infoW, "origin\tresolved\t%s\n", cref)
+			fmt.Fprintf(infoW, "origin\tservice\t%s\n", cref.Service)
+			fmt.Fprintf(infoW, "origin\tserver\t%s\n", cref.Server)
+			fmt.Fprintf(infoW, "origin\towner\t%s\n", cref.Owner)
+			fmt.Fprintf(infoW, "origin\trepository\t%s\n", cref.Repository)
+			fmt.Fprintf(infoW, "origin\tref\t%s\n", cref.Ref)
+		}
+
+		{ // metadata
+			for _, metadata := range ref.GetMetadata() {
+				fmt.Fprintf(infoW, "metadata\t%s\t%s\n", metadata.Name, metadata.Value)
+			}
+		}
+
+		{ // resources
+			var results []string
+
+			for _, resource := range resourceMap {
+				results = append(results, resource.GetName())
+			}
+
+			sort.Strings(results)
+
+			for _, result := range results {
+				fmt.Fprintf(infoW, "resource\t%s\n", result)
+			}
+		}
+
+		if infoC != nil {
+			err = infoC.Close()
+			if err != nil {
+				return errors.Wrap(err, "closing info")
+			}
 		}
 	}
 

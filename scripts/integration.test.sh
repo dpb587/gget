@@ -10,10 +10,24 @@ rm -fr tmp/integrationtest/workdir
 mkdir tmp/integrationtest/workdir
 cd tmp/integrationtest/workdir
 
-../gget github.com/dpb587/gget --ref-version=0.2.x '*linux*'
+../gget github.com/dpb587/gget --ref-version=0.2.x --dump-info=info.txt '*linux*'
 
 diff <( shasum * ) - <<EOF
 734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
+92a43b6a3eb807c26f0c8a76ff0fec96621de742  info.txt
+EOF
+
+rm *
+
+../gget github.com/dpb587/gget --no-download
+
+[[ "$( ls -l . )" == "total 0" ]]
+
+../gget github.com/dpb587/gget --ref-version=0.2.x --dump-info=info.txt '*linux*'
+
+diff <( shasum * ) - <<EOF
+734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
+92a43b6a3eb807c26f0c8a76ff0fec96621de742  info.txt
 EOF
 
 rm *
@@ -82,3 +96,5 @@ rm *
 cd ../../
 
 rm -fr tmp/integrationtest
+
+echo Success

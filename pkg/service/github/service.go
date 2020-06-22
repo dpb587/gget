@@ -14,6 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const ServiceName = "github"
+
 type Service struct {
 	log           *logrus.Logger
 	clientFactory *ClientFactory
@@ -30,7 +32,7 @@ var _ service.RefResolver = &Service{}
 var _ service.ConditionalRefResolver = &Service{}
 
 func (s Service) IsRefSupported(_ context.Context, lookupRef service.LookupRef) bool {
-	return lookupRef.Ref.Server == "github.com"
+	return lookupRef.Ref.Service == ServiceName || lookupRef.Ref.Server == "github.com"
 }
 
 func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (service.ResolvedRef, error) {
@@ -42,6 +44,7 @@ func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (s
 	var cachedRelease *github.RepositoryRelease
 
 	canonicalRef := lookupRef.Ref
+	canonicalRef.Service = ServiceName
 
 	if canonicalRef.Ref == "" {
 		release, err := s.resolveLatest(ctx, client, lookupRef)

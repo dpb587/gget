@@ -15,6 +15,8 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
+const ServiceName = "gitlab"
+
 type Service struct {
 	log           *logrus.Logger
 	clientFactory *ClientFactory
@@ -31,7 +33,7 @@ var _ service.RefResolver = &Service{}
 var _ service.ConditionalRefResolver = &Service{}
 
 func (s Service) IsRefSupported(_ context.Context, lookupRef service.LookupRef) bool {
-	return lookupRef.Ref.Server == "gitlab.com"
+	return lookupRef.Ref.Service == ServiceName || lookupRef.Ref.Server == "gitlab.com"
 }
 
 func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (service.ResolvedRef, error) {
@@ -41,6 +43,7 @@ func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (s
 	}
 
 	canonicalRef := lookupRef.Ref
+	canonicalRef.Service = ServiceName
 
 	var cachedRelease *gitlab.Release
 

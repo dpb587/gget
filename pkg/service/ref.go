@@ -7,6 +7,7 @@ import (
 )
 
 type Ref struct {
+	Service    string
 	Server     string
 	Owner      string
 	Repository string
