@@ -150,12 +150,10 @@ func (s Service) resolveCommitReference(ctx context.Context, client *gitlab.Clie
 		ref:             ref,
 		commit:          commitSHA,
 		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, commitSHA[0:9]),
-		RefMetadataService: service.RefMetadataService{
-			Metadata: []service.RefMetadata{
-				{
-					Name:  "commit",
-					Value: commitSHA,
-				},
+		metadata: service.RefMetadata{
+			{
+				Name:  "commit",
+				Value: commitSHA,
 			},
 		},
 	}
@@ -172,16 +170,14 @@ func (s Service) resolveHeadReference(ctx context.Context, client *gitlab.Client
 		ref:             ref,
 		commit:          commitSHA,
 		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, path.Base(branchName)),
-		RefMetadataService: service.RefMetadataService{
-			Metadata: []service.RefMetadata{
-				{
-					Name:  "branch",
-					Value: branchName,
-				},
-				{
-					Name:  "commit",
-					Value: commitSHA,
-				},
+		metadata: service.RefMetadata{
+			{
+				Name:  "branch",
+				Value: branchName,
+			},
+			{
+				Name:  "commit",
+				Value: commitSHA,
 			},
 		},
 	}
@@ -198,16 +194,14 @@ func (s Service) resolveTagReference(ctx context.Context, client *gitlab.Client,
 		ref:             ref,
 		commit:          commitSHA,
 		archiveFileBase: fmt.Sprintf("%s-%s", ref.Repository, tagName),
-		RefMetadataService: service.RefMetadataService{
-			Metadata: []service.RefMetadata{
-				{
-					Name:  "tag",
-					Value: tagName,
-				},
-				{
-					Name:  "commit",
-					Value: commitSHA,
-				},
+		metadata: service.RefMetadata{
+			{
+				Name:  "tag",
+				Value: tagName,
+			},
+			{
+				Name:  "commit",
+				Value: commitSHA,
 			},
 		},
 	}

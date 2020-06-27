@@ -13,19 +13,23 @@ import (
 )
 
 type CommitRef struct {
-	service.RefMetadataService
-
-	client *github.Client
-	ref    service.Ref
-	commit string
+	client   *github.Client
+	ref      service.Ref
+	commit   string
+	metadata service.RefMetadata
 
 	archiveFileBase string
 }
 
+var _ service.ResolvedRef = &ReleaseRef{}
 var _ service.ResourceResolver = &CommitRef{}
 
 func (r *CommitRef) CanonicalRef() service.Ref {
 	return r.ref
+}
+
+func (r *CommitRef) GetMetadata(_ context.Context) (service.RefMetadata, error) {
+	return r.metadata, nil
 }
 
 func (r *CommitRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.ResourceName) ([]service.ResolvedResource, error) {

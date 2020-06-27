@@ -12,5 +12,5 @@ type ResolvedRef interface {
 	ResourceResolver
 
 	CanonicalRef() Ref
-	GetMetadata() []RefMetadata
+	GetMetadata(ctx context.Context) (RefMetadata, error)
 }

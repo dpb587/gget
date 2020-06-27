@@ -157,8 +157,13 @@ func (c *Command) Execute(_ []string) error {
 
 	{ // TODO(1.x) remove
 		if c.ShowRef {
-			for _, metadata := range ref.GetMetadata() {
-				fmt.Printf("%s\t%s\n", metadata.Name, metadata.Value)
+			metadata, err := ref.GetMetadata(ctx)
+			if err != nil {
+				return errors.Wrap(err, "getting metadata")
+			}
+
+			for _, metadatum := range metadata {
+				fmt.Printf("%s\t%s\n", metadatum.Name, metadatum.Value)
 			}
 		}
 	}
@@ -239,8 +244,13 @@ func (c *Command) Execute(_ []string) error {
 		}
 
 		{ // metadata
-			for _, metadata := range ref.GetMetadata() {
-				fmt.Fprintf(infoW, "metadata\t%s\t%s\n", metadata.Name, metadata.Value)
+			metadata, err := ref.GetMetadata(ctx)
+			if err != nil {
+				errors.Wrap(err, "getting metadata")
+			}
+
+			for _, metadatum := range metadata {
+				fmt.Fprintf(infoW, "metadata\t%s\t%s\n", metadatum.Name, metadatum.Value)
 			}
 		}
 

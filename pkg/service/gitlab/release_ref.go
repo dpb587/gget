@@ -20,14 +20,15 @@ type ReleaseRef struct {
 	checksumManager checksum.Manager
 }
 
+var _ service.ResolvedRef = &ReleaseRef{}
 var _ service.ResourceResolver = &ReleaseRef{}
 
 func (r *ReleaseRef) CanonicalRef() service.Ref {
 	return r.ref
 }
 
-func (r *ReleaseRef) GetMetadata() []service.RefMetadata {
-	return r.targetRef.GetMetadata()
+func (r *ReleaseRef) GetMetadata(ctx context.Context) (service.RefMetadata, error) {
+	return r.targetRef.GetMetadata(ctx)
 }
 
 func (r *ReleaseRef) ResolveResource(ctx context.Context, resourceType service.ResourceType, resource service.ResourceName) ([]service.ResolvedResource, error) {

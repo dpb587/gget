@@ -10,27 +10,24 @@ rm -fr tmp/integrationtest/workdir
 mkdir tmp/integrationtest/workdir
 cd tmp/integrationtest/workdir
 
+# dump-info, ref-version constraints, match constraint
+
 ../gget github.com/dpb587/gget --ref-version=0.2.x --dump-info=info.txt '*linux*'
 
 diff <( shasum * ) - <<EOF
 734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
-92a43b6a3eb807c26f0c8a76ff0fec96621de742  info.txt
+9105e0f6d730301578ebb70d807e1d09b26aba5e  info.txt
 EOF
 
 rm *
+
+# no-download
 
 ../gget github.com/dpb587/gget --no-download
 
 [[ "$( ls -l . )" == "total 0" ]]
 
-../gget github.com/dpb587/gget --ref-version=0.2.x --dump-info=info.txt '*linux*'
-
-diff <( shasum * ) - <<EOF
-734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
-92a43b6a3eb807c26f0c8a76ff0fec96621de742  info.txt
-EOF
-
-rm *
+# tag-specific, exclusions
 
 ../gget github.com/gohugoio/hugo@v0.63.1 --exclude='*extended*' 'hugo_*_Linux-ARM.deb'
 
@@ -39,6 +36,8 @@ diff <( shasum * ) - <<EOF
 EOF
 
 rm *
+
+# renaming, executable
 
 ../gget --executable github.com/stedolan/jq@jq-1.6 my-custom-name=jq-osx-amd64
 
@@ -49,6 +48,8 @@ EOF
 
 rm *
 
+# blobs, branches
+
 ../gget --type=blob github.com/stedolan/jq@jq-1.5-branch README.md
 
 diff <( shasum * ) - <<EOF
@@ -56,6 +57,8 @@ cded31e0fbf9b7dbf9e6ffa9132201ce1d0b0f2d  README.md
 EOF
 
 rm *
+
+# blobs, commits
 
 ../gget --type=blob github.com/stedolan/jq@a17dd3248a README.md
 
@@ -65,6 +68,8 @@ EOF
 
 rm *
 
+# stdout
+
 ../gget --stdout github.com/buildpacks/pack@v0.8.1 '*macos*' | tar -xzf-
 
 diff <( shasum * ) - <<EOF
@@ -73,11 +78,15 @@ EOF
 
 rm *
 
+# gitlab, release tag
+
 ../gget gitlab.com/gitlab-org/gitlab@v12.10.0-ee 'gitlab-*-released'
 
 grep -q 'GitLab 12.10 released with Requirements Management, Autoscaling CI on AWS Fargate' gitlab-*-released
 
 rm *
+
+# gitlab, tag constraints
 
 ../gget gitlab.com/gitlab-org/gitlab-runner --ref-version=11.x 'gitlab-runner_amd64.deb'
 
@@ -87,14 +96,22 @@ EOF
 
 rm *
 
+# version basics
+
 ../gget --version > /dev/null
+
+# version validation
 
 ../gget --version=0.0.0 > /dev/null
 
+# help
+
 ../gget --help > /dev/null
+
+# done
 
 cd ../../
 
 rm -fr tmp/integrationtest
 
-echo Success
+echo Tests Successful

@@ -57,15 +57,9 @@ func ParseRefString(in string) (Ref, error) {
 	return res, nil
 }
 
-type RefMetadata struct {
+type RefMetadatum struct {
 	Name  string
 	Value string
 }
 
-type RefMetadataService struct {
-	Metadata []RefMetadata
-}
-
-func (rmf RefMetadataService) GetMetadata() []RefMetadata {
-	return rmf.Metadata
-}
+type RefMetadata []RefMetadatum
