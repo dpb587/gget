@@ -3,6 +3,7 @@ package transferutil
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -76,11 +77,12 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 		)
 	}
 
-	return transfer.NewTransfer(origin, steps), nil
+	return transfer.NewTransfer(origin, steps, opts.FinalStatus), nil
 }
 
 type TransferOptions struct {
 	Executable                   bool
 	ChecksumMode                 string
 	ChecksumAcceptableAlgorithms checksum.AlgorithmList
+	FinalStatus                  io.Writer
 }

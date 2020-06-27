@@ -41,7 +41,8 @@ type DownloadOptions struct {
 	CD             string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
 	DumpInfo       string                  `long:"dump-info" description:"write details about the download plan to file" value-name:"LOCAL-PATH"`
 	Executable     opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	NoDownload     bool                    `long:"no-download" description:"do not download matched resources"`
+	NoDownload     bool                    `long:"no-download" description:"do not perform any downloads"`
+	NoProgress     bool                    `long:"no-progress" description:"do not show live-updating progress during downloads"`
 	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
 	Stdout         bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
 	VerifyChecksum opt.VerifyChecksum      `long:"verify-checksum" description:"strategy for verifying checksums (values: auto, required, none, {algo}, {algo}-min)" value-name:"[METHOD]" default:"auto" optional-value:"required"`
@@ -271,6 +272,7 @@ func (c *Command) Execute(_ []string) error {
 
 	// output = stderr since everything should be progress reports
 	stdout := os.Stderr
+	var finalStatus io.Writer
 
 	if !c.Runtime.Quiet {
 		l := len(resourceMap)
@@ -301,6 +303,10 @@ func (c *Command) Execute(_ []string) error {
 		}
 
 		fmt.Fprintf(stdout, "Downloading %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
+
+		if c.NoProgress {
+			finalStatus = stdout
+		}
 	}
 
 	var transfers []*transfer.Transfer
@@ -314,6 +320,7 @@ func (c *Command) Execute(_ []string) error {
 				Executable:                   !c.Executable.Match(resource.GetName()).IsEmpty(),
 				ChecksumMode:                 c.VerifyChecksum.Mode(),
 				ChecksumAcceptableAlgorithms: c.VerifyChecksum.AcceptableAlgorithms(),
+				FinalStatus:                  finalStatus,
 			},
 		)
 		if err != nil {
@@ -330,7 +337,7 @@ func (c *Command) Execute(_ []string) error {
 
 	var pbO io.Writer = stdout
 
-	if c.Runtime.Quiet {
+	if c.Runtime.Quiet || c.NoProgress {
 		pbO = ioutil.Discard
 	}
 

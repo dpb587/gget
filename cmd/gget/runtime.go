@@ -13,7 +13,7 @@ import (
 
 type Runtime struct {
 	Help    bool                 `long:"help" short:"h" description:"show documentation of this command"`
-	Quiet   bool                 `long:"quiet" short:"q" description:"suppress runtime status reporting"`
+	Quiet   bool                 `long:"quiet" short:"q" description:"suppress runtime status messages"`
 	Verbose []bool               `long:"verbose" short:"v" description:"increase logging verbosity (multiple)"`
 	Version *ggetutil.VersionOpt `long:"version" description:"show version of this command (with optional constraint to validate)" optional:"true" optional-value:"*" value-name:"[CONSTRAINT]"`
 

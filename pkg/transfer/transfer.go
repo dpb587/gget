@@ -12,17 +12,19 @@ import (
 )
 
 type Transfer struct {
-	origin DownloadAsset
-	steps  []Step
+	origin      DownloadAsset
+	steps       []Step
+	finalStatus io.Writer
 
 	pb   *mpb.Progress
 	bars []*mpb.Bar
 }
 
-func NewTransfer(origin DownloadAsset, steps []Step) *Transfer {
+func NewTransfer(origin DownloadAsset, steps []Step, finalStatus io.Writer) *Transfer {
 	return &Transfer{
-		origin: origin,
-		steps:  steps,
+		origin:      origin,
+		steps:       steps,
+		finalStatus: finalStatus,
 	}
 }
 
@@ -171,6 +173,10 @@ func (w Transfer) Execute(ctx context.Context) error {
 
 		w.bars[len(w.steps)+3].SetTotal(1, true)
 		pbb.SetTotal(1, true)
+
+		if w.finalStatus != nil {
+			fmt.Fprintf(w.finalStatus, "%s %s\n", w.GetSubject(), name)
+		}
 	}
 
 	return nil
