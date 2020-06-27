@@ -3,7 +3,7 @@ package checksum
 import "fmt"
 
 type HashVerificationError struct {
-	algorithm string
+	algorithm Algorithm
 	expected  []byte
 	actual    []byte
 }

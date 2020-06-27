@@ -18,7 +18,3 @@ type DownloadAsset interface {
 	GetSize() int64
 	Open(ctx context.Context) (io.ReadCloser, error)
 }
-
-type StepProvider interface {
-	GetTransferSteps(ctx context.Context) ([]Step, error)
-}

@@ -27,13 +27,13 @@ func NewDeferredManager(manager checksum.WriteableManager, opener func(context.C
 	}
 }
 
-func (m *DeferredManager) GetChecksum(ctx context.Context, resource string) (checksum.Checksum, error) {
+func (m *DeferredManager) GetChecksums(ctx context.Context, resource string, algos checksum.AlgorithmList) (checksum.ChecksumList, error) {
 	err := m.requireLoad(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.manager.GetChecksum(ctx, resource)
+	return m.manager.GetChecksums(ctx, resource, algos)
 }
 
 func (m *DeferredManager) requireLoad(ctx context.Context) error {

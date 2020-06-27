@@ -38,12 +38,13 @@ type ResourceOptions struct {
 }
 
 type DownloadOptions struct {
-	CD         string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
-	DumpInfo   string                  `long:"dump-info" description:"write details about the download plan to file" value-name:"LOCAL-PATH"`
-	Executable opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	NoDownload bool                    `long:"no-download" description:"do not download matched resources"`
-	Parallel   int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
-	Stdout     bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
+	CD             string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
+	DumpInfo       string                  `long:"dump-info" description:"write details about the download plan to file" value-name:"LOCAL-PATH"`
+	Executable     opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	NoDownload     bool                    `long:"no-download" description:"do not download matched resources"`
+	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
+	Stdout         bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
+	VerifyChecksum opt.VerifyChecksum      `long:"verify-checksum" description:"strategy for verifying checksums (values: auto, required, none, {algo}, {algo}-min)" value-name:"[METHOD]" default:"auto" optional-value:"required"`
 }
 
 type Command struct {
@@ -310,7 +311,9 @@ func (c *Command) Execute(_ []string) error {
 			resource,
 			localPath,
 			transferutil.TransferOptions{
-				Executable: !c.Executable.Match(resource.GetName()).IsEmpty(),
+				Executable:                   !c.Executable.Match(resource.GetName()).IsEmpty(),
+				ChecksumMode:                 c.VerifyChecksum.Mode(),
+				ChecksumAcceptableAlgorithms: c.VerifyChecksum.AcceptableAlgorithms(),
 			},
 		)
 		if err != nil {

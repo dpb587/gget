@@ -3,7 +3,7 @@ package checksum
 import "context"
 
 type Manager interface {
-	GetChecksum(ctx context.Context, resource string) (Checksum, error)
+	GetChecksums(ctx context.Context, resource string, algos AlgorithmList) (ChecksumList, error)
 }
 
 type WriteableManager interface {

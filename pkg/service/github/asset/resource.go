@@ -8,8 +8,6 @@ import (
 
 	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/service"
-	"github.com/dpb587/gget/pkg/transfer"
-	"github.com/dpb587/gget/pkg/transfer/step"
 	"github.com/google/go-github/v29/github"
 	"github.com/pkg/errors"
 )
@@ -23,7 +21,7 @@ type Resource struct {
 }
 
 var _ service.ResolvedResource = &Resource{}
-var _ transfer.StepProvider = &Resource{}
+var _ service.ChecksumSupportedResolvedResource = &Resource{}
 
 func NewResource(client *github.Client, releaseOwner, releaseRepository string, asset github.ReleaseAsset, checksumManager checksum.Manager) *Resource {
 	return &Resource{
@@ -43,30 +41,19 @@ func (r *Resource) GetSize() int64 {
 	return int64(r.asset.GetSize())
 }
 
-func (r *Resource) GetTransferSteps(ctx context.Context) ([]transfer.Step, error) {
+func (r *Resource) GetChecksum(ctx context.Context, algos checksum.AlgorithmList) (checksum.Checksum, error) {
 	if r.checksumManager == nil {
 		return nil, nil
 	}
 
-	cs, err := r.checksumManager.GetChecksum(ctx, r.asset.GetName())
+	cs, err := r.checksumManager.GetChecksums(ctx, r.asset.GetName(), algos)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting checksum of %s", r.asset.GetName())
-	} else if cs == nil {
+	} else if len(cs) == 0 {
 		return nil, nil
 	}
 
-	verifier, err := cs.NewVerifier(ctx)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting %s verifier", cs.Algorithm())
-	}
-
-	res := []transfer.Step{
-		&step.VerifyChecksum{
-			Verifier: verifier,
-		},
-	}
-
-	return res, nil
+	return algos.FirstMatchingChecksum(cs)
 }
 
 func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {

@@ -2,9 +2,12 @@ package transferutil
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/dpb587/gget/pkg/checksum"
+	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/transfer"
 	"github.com/dpb587/gget/pkg/transfer/step"
 	"github.com/pkg/errors"
@@ -29,13 +32,32 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 		)
 	}
 
-	if ds, ok := origin.(transfer.StepProvider); ok {
-		extraSteps, err := ds.GetTransferSteps(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting transfer steps")
+	if opts.ChecksumMode != "none" { // verify checksum
+		var cs checksum.Checksum
+		var err error
+
+		if csr, ok := origin.(service.ChecksumSupportedResolvedResource); ok {
+			cs, err = csr.GetChecksum(ctx, opts.ChecksumAcceptableAlgorithms)
+			if err != nil {
+				return nil, errors.Wrap(err, "getting checksum")
+			}
 		}
 
-		steps = append(steps, extraSteps...)
+		if cs == nil && opts.ChecksumMode == "required" {
+			return nil, fmt.Errorf("checksum required but not found: %s", opts.ChecksumAcceptableAlgorithms.Join(", "))
+		} else if cs != nil {
+			verifier, err := cs.NewVerifier(ctx)
+			if err != nil {
+				return nil, errors.Wrapf(err, "getting %s verifier", cs.Algorithm())
+			}
+
+			steps = append(
+				steps,
+				&step.VerifyChecksum{
+					Verifier: verifier,
+				},
+			)
+		}
 	}
 
 	if targetPath != "-" {
@@ -58,5 +80,7 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 }
 
 type TransferOptions struct {
-	Executable bool
+	Executable                   bool
+	ChecksumMode                 string
+	ChecksumAcceptableAlgorithms checksum.AlgorithmList
 }

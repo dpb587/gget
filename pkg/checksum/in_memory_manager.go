@@ -5,24 +5,24 @@ import (
 )
 
 type InMemoryManager struct {
-	resourceChecksums map[string][]Checksum
+	resourceChecksums map[string]ChecksumList
 }
 
 var _ Manager = &InMemoryManager{}
 
 func NewInMemoryManager() WriteableManager {
 	return &InMemoryManager{
-		resourceChecksums: map[string][]Checksum{},
+		resourceChecksums: map[string]ChecksumList{},
 	}
 }
 
-func (m *InMemoryManager) GetChecksum(ctx context.Context, resource string) (Checksum, error) {
+func (m *InMemoryManager) GetChecksums(ctx context.Context, resource string, algos AlgorithmList) (ChecksumList, error) {
 	resourceChecksums, found := m.resourceChecksums[resource]
 	if !found {
 		return nil, nil
 	}
 
-	return StrongestChecksum(resourceChecksums), nil
+	return resourceChecksums.FilterAlgorithms(algos), nil
 }
 
 func (m *InMemoryManager) Resources() []string {

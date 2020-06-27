@@ -11,20 +11,23 @@ import (
 
 func GuessChecksum(expected []byte) (Checksum, error) {
 	var hasher func() hash.Hash
-	var algorithm string
+	var algorithm Algorithm
 
 	switch len(expected) {
 	case 16:
-		algorithm = "md5"
+		algorithm = MD5
 		hasher = md5.New
 	case 20:
-		algorithm = "sha1"
+		algorithm = SHA1
 		hasher = sha1.New
 	case 32:
-		algorithm = "sha256"
+		algorithm = SHA256
 		hasher = sha256.New
+	case 48:
+		algorithm = SHA384
+		hasher = sha512.New384
 	case 64:
-		algorithm = "sha512"
+		algorithm = SHA512
 		hasher = sha512.New
 	default:
 		return nil, fmt.Errorf("unrecognized hash: %s", expected)

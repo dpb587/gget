@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"io"
+
+	"github.com/dpb587/gget/pkg/checksum"
 )
 
 type ResourceResolver interface {
@@ -12,6 +14,9 @@ type ResourceResolver interface {
 type ResolvedResource interface {
 	GetName() string
 	GetSize() int64
-	// GetLocation(ctx context.Context) (string, error)
 	Open(ctx context.Context) (io.ReadCloser, error)
+}
+
+type ChecksumSupportedResolvedResource interface {
+	GetChecksum(ctx context.Context, algos checksum.AlgorithmList) (checksum.Checksum, error)
 }

@@ -18,17 +18,17 @@ func NewMultiManager(managers ...Manager) Manager {
 	}
 }
 
-func (m MultiManager) GetChecksum(ctx context.Context, resource string) (Checksum, error) {
-	var checksums []Checksum
+func (m MultiManager) GetChecksums(ctx context.Context, resource string, algos AlgorithmList) (ChecksumList, error) {
+	var res ChecksumList
 
 	for managerIdx, manager := range m.managers {
-		checksum, err := manager.GetChecksum(ctx, resource)
+		checksums, err := manager.GetChecksums(ctx, resource, algos)
 		if err != nil {
 			return nil, errors.Wrapf(err, "manager %d", managerIdx)
-		} else if checksum != nil {
-			checksums = append(checksums, checksum)
 		}
+
+		res = append(res, checksums...)
 	}
 
-	return StrongestChecksum(checksums), nil
+	return res.FilterAlgorithms(algos), nil
 }

@@ -45,24 +45,26 @@ func NewReleaseChecksumManager(client *github.Client, releaseOwner, releaseRepos
 	return checksum.NewMultiManager(append([]checksum.Manager{literalManager}, deferredManagers...)...)
 }
 
-func checkReleaseAssetChecksumBehavior(releaseAsset github.ReleaseAsset) (string, string, bool) {
+func checkReleaseAssetChecksumBehavior(releaseAsset github.ReleaseAsset) (checksum.Algorithm, string, bool) {
 	name := releaseAsset.GetName()
 	nameLower := strings.ToLower(name)
 	ext := filepath.Ext(releaseAsset.GetName())
 	extLower := strings.ToLower(strings.TrimPrefix(ext, "."))
 
-	if extLower == "md5" || extLower == "sha1" || extLower == "sha256" || extLower == "sha512" {
-		return extLower, strings.TrimSuffix(name, ext), true
+	if extLower == "md5" || extLower == "sha1" || extLower == "sha256" || extLower == "sha384" || extLower == "sha512" {
+		return checksum.Algorithm(extLower), strings.TrimSuffix(name, ext), true
 	} else if nameLower == "md5sums" || nameLower == "md5sums.txt" {
-		return "md5", "", true
+		return checksum.MD5, "", true
 	} else if nameLower == "sha1sums" || nameLower == "sha1sums.txt" {
-		return "sha1", "", true
+		return checksum.SHA1, "", true
+	} else if nameLower == "sha384sums" || nameLower == "sha384sums.txt" {
+		return checksum.SHA384, "", true
 	} else if nameLower == "sha256sums" || nameLower == "sha256sums.txt" {
-		return "sha256", "", true
+		return checksum.SHA256, "", true
 	} else if nameLower == "sha512sums" || nameLower == "sha512sums.txt" {
-		return "sha512", "", true
+		return checksum.SHA512, "", true
 	} else if nameLower == "CHECKSUM" || nameLower == "CHECKSUMS" || strings.HasSuffix(nameLower, "checksums.txt") {
-		return "unknown", "", true
+		return checksum.Algorithm("unknown"), "", true
 	}
 
 	return "", "", false

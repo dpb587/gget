@@ -2,6 +2,7 @@ package checksum
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 )
@@ -9,10 +10,10 @@ import (
 type deferredChecksum struct {
 	manager   Manager
 	resource  string
-	algorithm string
+	algorithm Algorithm
 }
 
-func NewDeferredChecksum(manager Manager, resource string, algorithm string) Checksum {
+func NewDeferredChecksum(manager Manager, resource string, algorithm Algorithm) Checksum {
 	return &deferredChecksum{
 		manager:   manager,
 		resource:  resource,
@@ -20,7 +21,7 @@ func NewDeferredChecksum(manager Manager, resource string, algorithm string) Che
 	}
 }
 
-func (c deferredChecksum) Algorithm() string {
+func (c deferredChecksum) Algorithm() Algorithm {
 	return c.algorithm
 }
 
@@ -34,12 +35,12 @@ func (c deferredChecksum) NewVerifier(ctx context.Context) (*HashVerifier, error
 }
 
 func (c *deferredChecksum) requireChecksum(ctx context.Context) (Checksum, error) {
-	checksum, err := c.manager.GetChecksum(ctx, c.resource)
+	checksums, err := c.manager.GetChecksums(ctx, c.resource, AlgorithmList{c.algorithm})
 	if err != nil {
 		return nil, errors.Wrap(err, "getting deferred checksum")
-	} else if checksum == nil {
-		return nil, errors.New("missing deferred checksum")
+	} else if len(checksums) != 1 {
+		return nil, fmt.Errorf("expected deferred checksum: %s", c.algorithm)
 	}
 
-	return checksum, nil
+	return checksums[0], nil
 }

@@ -29,19 +29,19 @@ var _ = Describe("Markdown", func() {
 				"```",
 			}, "\n")))
 
-			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksums(ctx, "gget-0.1.1-darwin-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cs).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err := cs.NewVerifier(ctx)
+			csv, err := cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 
-			cs, err = csm.GetChecksum(ctx, "gget-0.1.1-linux-amd64")
+			cs, err = csm.GetChecksums(ctx, "gget-0.1.1-linux-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(csv).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err = cs.NewVerifier(ctx)
+			csv, err = cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-linux-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
@@ -61,11 +61,11 @@ var _ = Describe("Markdown", func() {
 				"```",
 			}, "\n")))
 
-			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksums(ctx, "gget-0.1.1-darwin-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cs).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err := cs.NewVerifier(ctx)
+			csv, err := cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
@@ -80,19 +80,19 @@ var _ = Describe("Markdown", func() {
 				"    9d61c2edcdb8ed71d58d94970d7ef4aeacbe1ac4bce4aecb06e2f3d804caee4b  gget-0.1.1-linux-amd64",
 			}, "\n")))
 
-			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksums(ctx, "gget-0.1.1-darwin-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cs).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err := cs.NewVerifier(ctx)
+			csv, err := cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 
-			cs, err = csm.GetChecksum(ctx, "gget-0.1.1-linux-amd64")
+			cs, err = csm.GetChecksums(ctx, "gget-0.1.1-linux-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(csv).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err = cs.NewVerifier(ctx)
+			csv, err = cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-linux-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})
@@ -109,11 +109,11 @@ var _ = Describe("Markdown", func() {
 				"```",
 			}, "\n")))
 
-			cs, err := csm.GetChecksum(ctx, "gget-0.1.1-darwin-amd64")
+			cs, err := csm.GetChecksums(ctx, "gget-0.1.1-darwin-amd64", checksum.AlgorithmsByStrength)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cs).ToNot(BeNil())
+			Expect(cs).To(HaveLen(1))
 
-			csv, err := cs.NewVerifier(ctx)
+			csv, err := cs[0].NewVerifier(ctx)
 			csv.Write([]byte("gget-0.1.1-darwin-amd64"))
 			Expect(csv.Verify()).ToNot(HaveOccurred())
 		})

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/dpb587/gget/pkg/checksum"
 	. "github.com/dpb587/gget/pkg/checksum"
 )
 
@@ -16,7 +17,7 @@ var _ = Describe("Guesser", func() {
 
 		cs, err := GuessChecksum(hashHex)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cs.Algorithm()).To(Equal("md5"))
+		Expect(cs.Algorithm()).To(Equal(checksum.MD5))
 
 		h, err := cs.NewVerifier(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -29,7 +30,7 @@ var _ = Describe("Guesser", func() {
 
 		cs, err := GuessChecksum(hashHex)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cs.Algorithm()).To(Equal("sha1"))
+		Expect(cs.Algorithm()).To(Equal(checksum.SHA1))
 
 		h, err := cs.NewVerifier(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -42,7 +43,7 @@ var _ = Describe("Guesser", func() {
 
 		cs, err := GuessChecksum(hashHex)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cs.Algorithm()).To(Equal("sha256"))
+		Expect(cs.Algorithm()).To(Equal(checksum.SHA256))
 
 		h, err := cs.NewVerifier(context.Background())
 		Expect(err).ToNot(HaveOccurred())
@@ -55,7 +56,7 @@ var _ = Describe("Guesser", func() {
 
 		cs, err := GuessChecksum(hashHex)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cs.Algorithm()).To(Equal("sha512"))
+		Expect(cs.Algorithm()).To(Equal(checksum.SHA512))
 
 		h, err := cs.NewVerifier(context.Background())
 		Expect(err).ToNot(HaveOccurred())

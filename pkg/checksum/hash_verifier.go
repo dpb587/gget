@@ -7,14 +7,14 @@ import (
 )
 
 type HashVerifier struct {
-	algorithm string
+	algorithm Algorithm
 	expected  []byte
 	hasher    hash.Hash
 }
 
 var _ io.Writer = &HashVerifier{}
 
-func NewHashVerifier(algorithm string, expected []byte, hasher hash.Hash) *HashVerifier {
+func NewHashVerifier(algorithm Algorithm, expected []byte, hasher hash.Hash) *HashVerifier {
 	return &HashVerifier{
 		algorithm: algorithm,
 		expected:  expected,
@@ -22,7 +22,7 @@ func NewHashVerifier(algorithm string, expected []byte, hasher hash.Hash) *HashV
 	}
 }
 
-func (hv *HashVerifier) Algorithm() string {
+func (hv *HashVerifier) Algorithm() Algorithm {
 	return hv.algorithm
 }
 

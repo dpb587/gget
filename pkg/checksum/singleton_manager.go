@@ -16,8 +16,8 @@ func NewInMemoryAliasManager(resource string) WriteableManager {
 	}
 }
 
-func (m *InMemoryAliasManager) GetChecksum(ctx context.Context, _ string) (Checksum, error) {
-	return m.manager.GetChecksum(ctx, m.resource)
+func (m *InMemoryAliasManager) GetChecksums(ctx context.Context, _ string, algos AlgorithmList) (ChecksumList, error) {
+	return m.manager.GetChecksums(ctx, m.resource, algos)
 }
 
 func (m *InMemoryAliasManager) AddChecksum(_ string, checksum Checksum) {
