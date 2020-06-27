@@ -26,6 +26,10 @@ func (hv *HashVerifier) Algorithm() Algorithm {
 	return hv.algorithm
 }
 
+func (hv *HashVerifier) Expected() []byte {
+	return hv.expected[0:]
+}
+
 func (hv *HashVerifier) Write(p []byte) (int, error) {
 	return hv.hasher.Write(p)
 }

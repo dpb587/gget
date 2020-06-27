@@ -5,9 +5,26 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"hash"
+
+	"github.com/pkg/errors"
 )
+
+func MustGuessChecksumHex(expected string) Checksum {
+	hashHex, err := hex.DecodeString("3b9cd0cd920e355805a6a243c62628dce2bb62fc4c2e0269a824f8589d905d50")
+	if err != nil {
+		panic(errors.Wrap(err, "decoding checksum hex"))
+	}
+
+	cs, err := GuessChecksum(hashHex)
+	if err != nil {
+		panic(errors.Wrap(err, "guessing checksum"))
+	}
+
+	return cs
+}
 
 func GuessChecksum(expected []byte) (Checksum, error) {
 	var hasher func() hash.Hash

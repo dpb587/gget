@@ -17,12 +17,16 @@ func NewInMemoryManager() WriteableManager {
 }
 
 func (m *InMemoryManager) GetChecksums(ctx context.Context, resource string, algos AlgorithmList) (ChecksumList, error) {
-	resourceChecksums, found := m.resourceChecksums[resource]
+	res, found := m.resourceChecksums[resource]
 	if !found {
 		return nil, nil
 	}
 
-	return resourceChecksums.FilterAlgorithms(algos), nil
+	if algos != nil {
+		res = res.FilterAlgorithms(algos)
+	}
+
+	return res, nil
 }
 
 func (m *InMemoryManager) Resources() []string {

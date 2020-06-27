@@ -28,17 +28,23 @@ func NewReleaseChecksumManager(client *github.Client, releaseOwner, releaseRepos
 
 		opener := newReleaseAssetChecksumOpener(client, releaseOwner, releaseRepository, releaseAsset)
 
+		var expectedAlgos checksum.AlgorithmList
+
+		if algorithm != "" && algorithm != "unknown" {
+			expectedAlgos = append(expectedAlgos, algorithm)
+		}
+
 		if resource != "" {
 			literalManager.AddChecksum(
 				resource,
 				checksum.NewDeferredChecksum(
-					parser.NewDeferredManager(checksum.NewInMemoryAliasManager(resource), opener),
+					parser.NewDeferredManager(checksum.NewInMemoryAliasManager(resource), expectedAlgos, opener),
 					resource,
 					algorithm,
 				),
 			)
 		} else if algorithm != "" {
-			deferredManagers = append(deferredManagers, parser.NewDeferredManager(literalManager, opener))
+			deferredManagers = append(deferredManagers, parser.NewDeferredManager(checksum.NewInMemoryManager(), expectedAlgos, opener))
 		}
 	}
 

@@ -18,5 +18,5 @@ type ResolvedResource interface {
 }
 
 type ChecksumSupportedResolvedResource interface {
-	GetChecksum(ctx context.Context, algos checksum.AlgorithmList) (checksum.Checksum, error)
+	GetChecksums(ctx context.Context, algos checksum.AlgorithmList) (checksum.ChecksumList, error)
 }

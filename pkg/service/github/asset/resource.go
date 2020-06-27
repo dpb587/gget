@@ -41,7 +41,7 @@ func (r *Resource) GetSize() int64 {
 	return int64(r.asset.GetSize())
 }
 
-func (r *Resource) GetChecksum(ctx context.Context, algos checksum.AlgorithmList) (checksum.Checksum, error) {
+func (r *Resource) GetChecksums(ctx context.Context, algos checksum.AlgorithmList) (checksum.ChecksumList, error) {
 	if r.checksumManager == nil {
 		return nil, nil
 	}
@@ -53,7 +53,7 @@ func (r *Resource) GetChecksum(ctx context.Context, algos checksum.AlgorithmList
 		return nil, nil
 	}
 
-	return algos.FirstMatchingChecksum(cs)
+	return cs, nil
 }
 
 func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {

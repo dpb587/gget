@@ -11,8 +11,9 @@ import (
 )
 
 type DeferredManager struct {
-	manager checksum.WriteableManager
-	opener  func(context.Context) (io.ReadCloser, error)
+	manager            checksum.WriteableManager
+	expectedAlgorithms checksum.AlgorithmList
+	opener             func(context.Context) (io.ReadCloser, error)
 
 	loaded bool
 	mutex  sync.RWMutex
@@ -20,14 +21,22 @@ type DeferredManager struct {
 
 var _ checksum.Manager = &DeferredManager{}
 
-func NewDeferredManager(manager checksum.WriteableManager, opener func(context.Context) (io.ReadCloser, error)) checksum.Manager {
+func NewDeferredManager(manager checksum.WriteableManager, expectedAlgorithms checksum.AlgorithmList, opener func(context.Context) (io.ReadCloser, error)) checksum.Manager {
 	return &DeferredManager{
-		manager: manager,
-		opener:  opener,
+		manager:            manager,
+		expectedAlgorithms: expectedAlgorithms,
+		opener:             opener,
 	}
 }
 
 func (m *DeferredManager) GetChecksums(ctx context.Context, resource string, algos checksum.AlgorithmList) (checksum.ChecksumList, error) {
+	if len(m.expectedAlgorithms) > 0 {
+		if len(m.expectedAlgorithms.Intersection(algos)) == 0 {
+			// avoid loading if we don't expect it to be found
+			return nil, nil
+		}
+	}
+
 	err := m.requireLoad(ctx)
 	if err != nil {
 		return nil, err

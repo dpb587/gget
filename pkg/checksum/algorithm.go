@@ -1,7 +1,6 @@
 package checksum
 
 import (
-	"fmt"
 	"strings"
 )
 
@@ -46,6 +45,22 @@ func (l AlgorithmList) Contains(in Algorithm) bool {
 	return false
 }
 
+func (l AlgorithmList) Intersection(in AlgorithmList) AlgorithmList {
+	var res AlgorithmList
+
+	for _, exp := range l {
+		for _, des := range in {
+			if exp == des {
+				res = append(res, exp)
+
+				break
+			}
+		}
+	}
+
+	return res
+}
+
 func (l AlgorithmList) Join(sep string) string {
 	var res []string
 
@@ -54,18 +69,6 @@ func (l AlgorithmList) Join(sep string) string {
 	}
 
 	return strings.Join(res, sep)
-}
-
-func (l AlgorithmList) FirstMatchingChecksum(in ChecksumList) (Checksum, error) {
-	for _, strong := range l {
-		for _, checksum := range in {
-			if checksum.Algorithm() == strong {
-				return checksum, nil
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("no algorithm matched: %s", l.Join(", "))
 }
 
 var AlgorithmsByStrength = AlgorithmList{SHA512, SHA384, SHA256, SHA1, MD5}

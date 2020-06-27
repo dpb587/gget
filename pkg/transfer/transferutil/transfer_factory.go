@@ -33,20 +33,23 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 		)
 	}
 
-	if opts.ChecksumMode != "none" { // verify checksum
-		var cs checksum.Checksum
-		var err error
+	if len(opts.ChecksumVerification.Acceptable) > 0 {
+		var csl checksum.ChecksumList
 
 		if csr, ok := origin.(service.ChecksumSupportedResolvedResource); ok {
-			cs, err = csr.GetChecksum(ctx, opts.ChecksumAcceptableAlgorithms)
+			avail, err := csr.GetChecksums(ctx, opts.ChecksumVerification.Acceptable)
 			if err != nil {
 				return nil, errors.Wrap(err, "getting checksum")
 			}
+
+			csl = opts.ChecksumVerification.Selector.SelectChecksums(avail)
 		}
 
-		if cs == nil && opts.ChecksumMode == "required" {
-			return nil, fmt.Errorf("checksum required but not found: %s", opts.ChecksumAcceptableAlgorithms.Join(", "))
-		} else if cs != nil {
+		if opts.ChecksumVerification.Required && len(csl) == 0 {
+			return nil, fmt.Errorf("acceptable checksum required but not found: %s", opts.ChecksumVerification.Acceptable.Join(", "))
+		}
+
+		for _, cs := range csl {
 			verifier, err := cs.NewVerifier(ctx)
 			if err != nil {
 				return nil, errors.Wrapf(err, "getting %s verifier", cs.Algorithm())
@@ -81,8 +84,7 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 }
 
 type TransferOptions struct {
-	Executable                   bool
-	ChecksumMode                 string
-	ChecksumAcceptableAlgorithms checksum.AlgorithmList
-	FinalStatus                  io.Writer
+	Executable           bool
+	ChecksumVerification checksum.VerificationProfile
+	FinalStatus          io.Writer
 }

@@ -11,6 +11,7 @@ import (
 
 	"code.cloudfoundry.org/bytefmt"
 	"github.com/dpb587/gget/pkg/cli/opt"
+	"github.com/dpb587/gget/pkg/export"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/dpb587/gget/pkg/service/github"
 	"github.com/dpb587/gget/pkg/service/gitlab"
@@ -39,11 +40,11 @@ type ResourceOptions struct {
 
 type DownloadOptions struct {
 	CD             string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
-	DumpInfo       string                  `long:"dump-info" description:"write details about the download plan to file" value-name:"LOCAL-PATH"`
 	Executable     opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
+	Export         *opt.Export             `long:"export" description:"export details about the download profile (values: json, plain, yaml, go-template:TMPL)" value-name:"FORMAT" optional:"true" optional-value:"json"`
 	NoDownload     bool                    `long:"no-download" description:"do not perform any downloads"`
 	NoProgress     bool                    `long:"no-progress" description:"do not show live-updating progress during downloads"`
-	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"INT"`
+	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"NUM"`
 	Stdout         bool                    `long:"stdout" description:"write file contents to stdout rather than disk"`
 	VerifyChecksum opt.VerifyChecksum      `long:"verify-checksum" description:"strategy for verifying checksums (values: auto, required, none, {algo}, {algo}-min)" value-name:"[METHOD]" default:"auto" optional-value:"required"`
 }
@@ -139,6 +140,11 @@ func (c *Command) Execute(_ []string) error {
 		return fmt.Errorf("missing argument: repository reference")
 	}
 
+	verifyChecksumProfile, err := c.VerifyChecksum.Profile()
+	if err != nil {
+		return errors.Wrap(err, "parsing --verify-checksum") // pseudo-parsing
+	}
+
 	refResolver, err := c.RefResolver(service.Ref(c.Args.Ref))
 	if err != nil {
 		return errors.Wrap(err, "getting ref resolver")
@@ -216,63 +222,42 @@ func (c *Command) Execute(_ []string) error {
 		}
 	}
 
-	if c.DumpInfo != "" {
-		var infoW io.Writer
-		var infoC io.Closer
+	if c.Export != nil {
+		var exporter export.Exporter
 
-		if c.DumpInfo == "-" {
-			infoW = os.Stdout
-		} else {
-			fh, err := os.OpenFile(c.DumpInfo, os.O_WRONLY|os.O_CREATE, 0700)
-			if err != nil {
-				return errors.Wrap(err, "opening info file")
+		switch c.Export.Mode {
+		case "go-template":
+			exporter = &export.GoTemplateExporter{
+				Template:             c.Export.Template,
+				ChecksumVerification: verifyChecksumProfile,
 			}
-
-			infoW = fh
-			infoC = fh
+		case "json":
+			exporter = export.JSONExporter{
+				ChecksumVerification: verifyChecksumProfile,
+			}
+		case "plain":
+			exporter = export.PlainExporter{
+				ChecksumVerification: verifyChecksumProfile,
+			}
+		case "yaml":
+			exporter = export.YAMLExporter{
+				ChecksumVerification: verifyChecksumProfile,
+			}
+		default:
+			return fmt.Errorf("unexpected export mode: %s", c.Export.Mode)
 		}
 
-		{ // origin
-			cref := ref.CanonicalRef()
+		var resourcesList []service.ResolvedResource
 
-			fmt.Fprintf(infoW, "origin\tresolved\t%s\n", cref)
-			fmt.Fprintf(infoW, "origin\tservice\t%s\n", cref.Service)
-			fmt.Fprintf(infoW, "origin\tserver\t%s\n", cref.Server)
-			fmt.Fprintf(infoW, "origin\towner\t%s\n", cref.Owner)
-			fmt.Fprintf(infoW, "origin\trepository\t%s\n", cref.Repository)
-			fmt.Fprintf(infoW, "origin\tref\t%s\n", cref.Ref)
+		for _, resource := range resourceMap {
+			resourcesList = append(resourcesList, resource)
 		}
 
-		{ // metadata
-			metadata, err := ref.GetMetadata(ctx)
-			if err != nil {
-				errors.Wrap(err, "getting metadata")
-			}
+		exportData := export.NewData(ref.CanonicalRef(), ref.GetMetadata, resourcesList)
 
-			for _, metadatum := range metadata {
-				fmt.Fprintf(infoW, "metadata\t%s\t%s\n", metadatum.Name, metadatum.Value)
-			}
-		}
-
-		{ // resources
-			var results []string
-
-			for _, resource := range resourceMap {
-				results = append(results, resource.GetName())
-			}
-
-			sort.Strings(results)
-
-			for _, result := range results {
-				fmt.Fprintf(infoW, "resource\t%s\n", result)
-			}
-		}
-
-		if infoC != nil {
-			err = infoC.Close()
-			if err != nil {
-				return errors.Wrap(err, "closing info")
-			}
+		err = exporter.Export(ctx, os.Stdout, exportData)
+		if err != nil {
+			return errors.Wrap(err, "exporting")
 		}
 	}
 
@@ -327,10 +312,9 @@ func (c *Command) Execute(_ []string) error {
 			resource,
 			localPath,
 			transferutil.TransferOptions{
-				Executable:                   !c.Executable.Match(resource.GetName()).IsEmpty(),
-				ChecksumMode:                 c.VerifyChecksum.Mode(),
-				ChecksumAcceptableAlgorithms: c.VerifyChecksum.AcceptableAlgorithms(),
-				FinalStatus:                  finalStatus,
+				Executable:           !c.Executable.Match(resource.GetName()).IsEmpty(),
+				ChecksumVerification: verifyChecksumProfile,
+				FinalStatus:          finalStatus,
 			},
 		)
 		if err != nil {

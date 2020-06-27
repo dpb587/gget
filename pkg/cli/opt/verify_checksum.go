@@ -7,63 +7,63 @@ import (
 	"github.com/dpb587/gget/pkg/checksum"
 )
 
-type VerifyChecksum struct {
-	algorithms checksum.AlgorithmList
-	mode       string
-}
+type VerifyChecksum []string
 
-func (vc *VerifyChecksum) UnmarshalFlag(data string) error {
-	if data == "required" {
-		vc.algorithms = checksum.AlgorithmsByStrength
-		vc.mode = "required"
+func (vR VerifyChecksum) Profile() (checksum.VerificationProfile, error) {
+	var standaloneValues []string
+	var usedCustomAlgos bool
 
-		return nil
-	} else if data == "auto" {
-		// default; empty
-		vc.algorithms = checksum.AlgorithmsByStrength
+	res := checksum.VerificationProfile{
+		Selector: checksum.StrongestChecksumSelector{},
+	}
 
-		return nil
-	} else if data == "none" {
-		vc.mode = "none"
+	v := vR
 
-		return nil
-	} else if strings.HasSuffix(data, "-min") {
-		algo := checksum.Algorithm(strings.TrimSuffix(data, "-min"))
+	for _, data := range v {
+		if data == "required" { // modifier
+			res.Required = true
+		} else if data == "all" { // modifier
+			res.Selector = checksum.AllChecksumSelector{}
+		} else if data == "auto" { // standalone
+			// explicit default
+			standaloneValues = append(standaloneValues, data)
+		} else if data == "none" {
+			res.Acceptable = checksum.AlgorithmList{}
+			standaloneValues = append(standaloneValues, data)
+			usedCustomAlgos = true
+		} else if strings.HasSuffix(data, "-min") {
+			algo := checksum.Algorithm(strings.TrimSuffix(data, "-min"))
 
-		vc.algorithms = checksum.AlgorithmsByStrength.FilterMin(algo)
-		if len(vc.algorithms) == 0 {
-			return fmt.Errorf("unsupported algorithm: %s", algo)
+			add := checksum.AlgorithmsByStrength.FilterMin(algo)
+			if len(add) == 0 {
+				return checksum.VerificationProfile{}, fmt.Errorf("unsupported algorithm: %s", algo)
+			}
+
+			res.Acceptable = append(res.Acceptable, add...)
+			res.Required = true
+
+			usedCustomAlgos = true
+		} else {
+			algo := checksum.Algorithm(data)
+
+			if !checksum.AlgorithmsByStrength.Contains(algo) {
+				return checksum.VerificationProfile{}, fmt.Errorf("unsupported algorithm: %s", data)
+			}
+
+			res.Acceptable = append(res.Acceptable, algo)
+			res.Required = true
+
+			usedCustomAlgos = true
 		}
-
-		vc.mode = "required"
-
-		return nil
 	}
 
-	a := checksum.Algorithm(data)
-
-	if !checksum.AlgorithmsByStrength.Contains(a) {
-		return fmt.Errorf("unsupported algorithm: %s", data)
+	if len(standaloneValues) > 1 {
+		return checksum.VerificationProfile{}, fmt.Errorf("standalone value combined with others: %s", strings.Join(standaloneValues, ", "))
 	}
 
-	vc.algorithms = checksum.AlgorithmList{a}
-	vc.mode = "required"
-
-	return nil
-}
-
-func (vc VerifyChecksum) Mode() string {
-	if vc.mode == "" {
-		return "auto"
+	if !usedCustomAlgos {
+		res.Acceptable = checksum.AlgorithmsByStrength
 	}
 
-	return vc.mode
-}
-
-func (vc VerifyChecksum) AcceptableAlgorithms() checksum.AlgorithmList {
-	if vc.algorithms != nil {
-		return vc.algorithms
-	}
-
-	return checksum.AlgorithmsByStrength
+	return res, nil
 }
