@@ -36,9 +36,13 @@ func WriteVersion(w io.Writer, self string, v Version, verbosity int) {
 			},
 		},
 		{
-			Type:      "build",
+			Type:      "runtime",
 			Component: "go",
 			Version:   runtime.Version(),
+			Metadata: []string{
+				fmt.Sprintf("arch %s", runtime.GOARCH),
+				fmt.Sprintf("os %s", runtime.GOOS),
+			},
 		},
 	}
 
