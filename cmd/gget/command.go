@@ -243,7 +243,7 @@ func (c *Command) Execute(_ []string) error {
 			extra = fmt.Sprintf(" (%s)", bytefmt.ByteSize(uint64(downloadSize)))
 		}
 
-		fmt.Fprintf(stdout, "Downloading %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
+		fmt.Fprintf(stdout, "Found %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
 
 		if c.NoProgress {
 			finalStatus = stdout
