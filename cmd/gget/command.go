@@ -42,7 +42,7 @@ type ResourceOptions struct {
 type DownloadOptions struct {
 	CD             string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
 	Executable     opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
-	Export         *opt.Export             `long:"export" description:"export details about the download profile (values: json, plain, yaml, go-template:TMPL)" value-name:"FORMAT" optional:"true" optional-value:"json"`
+	Export         *opt.Export             `long:"export" description:"export details about the download profile (values: json, jsonpath=TEMPLATE, plain, yaml)" value-name:"FORMAT"`
 	NoDownload     bool                    `long:"no-download" description:"do not perform any downloads"`
 	NoProgress     bool                    `long:"no-progress" description:"do not show live-updating progress during downloads"`
 	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"NUM"`
@@ -267,39 +267,15 @@ func (c *Command) Execute(_ []string) error {
 	}
 
 	if c.Export != nil {
-		var exporter export.Exporter
-
-		switch c.Export.Mode {
-		case "go-template":
-			exporter = &export.GoTemplateExporter{
-				Template:             c.Export.Template,
-				ChecksumVerification: verifyChecksumProfile,
-			}
-		case "json":
-			exporter = export.JSONExporter{
-				ChecksumVerification: verifyChecksumProfile,
-			}
-		case "plain":
-			exporter = export.PlainExporter{
-				ChecksumVerification: verifyChecksumProfile,
-			}
-		case "yaml":
-			exporter = export.YAMLExporter{
-				ChecksumVerification: verifyChecksumProfile,
-			}
-		default:
-			return fmt.Errorf("unexpected export mode: %s", c.Export.Mode)
-		}
-
 		var resourcesList []service.ResolvedResource
 
 		for _, resource := range resourceMap {
 			resourcesList = append(resourcesList, resource)
 		}
 
-		exportData := export.NewData(ref.CanonicalRef(), ref.GetMetadata, resourcesList)
+		exportData := export.NewData(ref.CanonicalRef(), ref.GetMetadata, resourcesList, verifyChecksumProfile)
 
-		err = exporter.Export(ctx, os.Stdout, exportData)
+		err = c.Export.Export(ctx, os.Stdout, exportData)
 		if err != nil {
 			return errors.Wrap(err, "exporting")
 		}

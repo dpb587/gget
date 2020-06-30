@@ -5,18 +5,15 @@ import (
 	"encoding/json"
 	"io"
 
-	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/pkg/errors"
 )
 
-type JSONExporter struct {
-	ChecksumVerification checksum.VerificationProfile
-}
+type JSONExporter struct{}
 
 var _ Exporter = JSONExporter{}
 
 func (e JSONExporter) Export(ctx context.Context, w io.Writer, data *Data) error {
-	res, err := newMarshalData(ctx, data, e.ChecksumVerification)
+	res, err := newMarshalData(ctx, data)
 	if err != nil {
 		return errors.Wrap(err, "preparing export")
 	}

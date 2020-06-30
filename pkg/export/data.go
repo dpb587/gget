@@ -5,24 +5,27 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/service"
 )
 
 type metadataGetterFunc func(ctx context.Context) (service.RefMetadata, error)
 
 type Data struct {
-	origin         service.Ref
-	metadataGetter metadataGetterFunc
-	resources      []service.ResolvedResource
+	origin               service.Ref
+	metadataGetter       metadataGetterFunc
+	resources            []service.ResolvedResource
+	checksumVerification checksum.VerificationProfile
 
 	metadata service.RefMetadata
 }
 
-func NewData(origin service.Ref, metadataGetter metadataGetterFunc, resources []service.ResolvedResource) *Data {
+func NewData(origin service.Ref, metadataGetter metadataGetterFunc, resources []service.ResolvedResource, checksumVerification checksum.VerificationProfile) *Data {
 	return &Data{
-		origin:         origin,
-		metadataGetter: metadataGetter,
-		resources:      resources,
+		origin:               origin,
+		metadataGetter:       metadataGetter,
+		resources:            resources,
+		checksumVerification: checksumVerification,
 	}
 }
 

@@ -25,5 +25,6 @@ require (
 	google.golang.org/appengine v1.6.5 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	k8s.io/client-go v11.0.0+incompatible
 	rsc.io/goversion v1.2.0
 )

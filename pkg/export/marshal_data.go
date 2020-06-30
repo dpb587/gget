@@ -6,12 +6,11 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/service"
 	"github.com/pkg/errors"
 )
 
-func newMarshalData(ctx context.Context, data *Data, checksumVerification checksum.VerificationProfile) (marshalData, error) {
+func newMarshalData(ctx context.Context, data *Data) (marshalData, error) {
 	origin := data.Origin()
 
 	res := marshalData{
@@ -51,15 +50,15 @@ func newMarshalData(ctx context.Context, data *Data, checksumVerification checks
 
 		var jsonChecksums []marshalDataResourceChecksum
 
-		if len(checksumVerification.Acceptable) > 0 {
+		if len(data.checksumVerification.Acceptable) > 0 {
 			// TODO probably ought to refactor to respect .Required here as well
 			if csr, ok := resource.(service.ChecksumSupportedResolvedResource); ok {
-				checksums, err := csr.GetChecksums(ctx, checksumVerification.Acceptable)
+				checksums, err := csr.GetChecksums(ctx, data.checksumVerification.Acceptable)
 				if err != nil {
 					return marshalData{}, errors.Wrapf(err, "getting checksums of %s", resource.GetName())
 				}
 
-				for _, checksum := range checksumVerification.Selector.SelectChecksums(checksums) {
+				for _, checksum := range data.checksumVerification.Selector.SelectChecksums(checksums) {
 					v, err := checksum.NewVerifier(ctx)
 					if err != nil {
 						return marshalData{}, errors.Wrapf(err, "getting checksum %s of %s", checksum.Algorithm(), resource.GetName())

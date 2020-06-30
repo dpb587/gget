@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/pkg/errors"
 )
 
-type PlainExporter struct {
-	ChecksumVerification checksum.VerificationProfile
-}
+type PlainExporter struct{}
 
 var _ Exporter = PlainExporter{}
 
 func (e PlainExporter) Export(ctx context.Context, w io.Writer, data *Data) error {
-	res, err := newMarshalData(ctx, data, e.ChecksumVerification)
+	res, err := newMarshalData(ctx, data)
 	if err != nil {
 		return errors.Wrap(err, "preparing export")
 	}

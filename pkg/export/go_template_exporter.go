@@ -5,21 +5,40 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/pkg/errors"
 )
 
 type GoTemplateExporter struct {
-	Template             *template.Template
-	ChecksumVerification checksum.VerificationProfile
+	template *template.Template
+}
+
+var _ Exporter = &GoTemplateExporter{}
+var _ TemplatedExporter = &GoTemplateExporter{}
+
+func (e *GoTemplateExporter) ParseTemplate(text string) error {
+	tmpl, err := template.New("export").Parse(text)
+	if err != nil {
+		return err
+	}
+
+	e.template = tmpl
+
+	return nil
 }
 
 func (e *GoTemplateExporter) Export(ctx context.Context, w io.Writer, data *Data) error {
 	// TODO lazy load and helper methods
-	res, err := newMarshalData(ctx, data, e.ChecksumVerification)
+	res, err := newMarshalData(ctx, data)
 	if err != nil {
 		return errors.Wrap(err, "preparing export")
 	}
 
-	return e.Template.Execute(w, res)
+	err = e.template.Execute(w, res)
+	if err != nil {
+		return errors.Wrap(err, "executing template")
+	}
+
+	w.Write([]byte("\n"))
+
+	return nil
 }

@@ -12,11 +12,11 @@ cd tmp/integrationtest/workdir
 
 # dump-info, ref-version constraints, match constraint
 
-../gget github.com/dpb587/gget --ref-version=0.2.x --dump-info=info.txt '*linux*'
+../gget github.com/dpb587/gget --ref-version=0.2.x --export=json '*linux*' > export.json
 
 diff <( shasum * ) - <<EOF
+c590780b597628823070447ec4d2190a206a2ef4  export.json
 734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
-9105e0f6d730301578ebb70d807e1d09b26aba5e  info.txt
 EOF
 
 rm *

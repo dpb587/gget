@@ -3,36 +3,52 @@ package opt
 import (
 	"fmt"
 	"strings"
-	"text/template"
 
+	"github.com/dpb587/gget/pkg/export"
 	"github.com/pkg/errors"
 )
 
 type Export struct {
-	Mode     string
-	Template *template.Template
+	export.Exporter
 }
 
 func (e *Export) UnmarshalFlag(data string) error {
+	var exporter export.Exporter
+	var template string
+
 	if data == "json" {
-		e.Mode = "json"
+		exporter = export.JSONExporter{}
+	} else if strings.HasPrefix(data, "jsonpath=") {
+		exporter = &export.JSONPathExporter{}
+		template = strings.TrimPrefix(data, "jsonpath=")
+	} else if data == "jsonpath" {
+		return fmt.Errorf("jsonpath must include a template")
 	} else if data == "yaml" {
-		e.Mode = "yaml"
+		exporter = export.YAMLExporter{}
 	} else if data == "plain" {
-		e.Mode = "plain"
-	} else if strings.HasPrefix(data, "go-template:") {
-		e.Mode = "go-template"
-
-		tmpl, err := template.New("export").Parse(strings.TrimPrefix(data, "go-template:"))
-		if err != nil {
-			return errors.Wrap(err, "parsing go-template")
-		}
-
-		e.Mode = "go-template"
-		e.Template = tmpl
+		exporter = export.PlainExporter{}
+		// } else if strings.HasPrefix(data, "go-template=") {
+		// 	exporter = &export.GoTemplateExporter{}
+		// 	template = strings.TrimPrefix(data, "go-template=")
+		// } else if data == "go-template" {
+		// 	return fmt.Errorf("go-template must include a template")
 	} else {
 		return fmt.Errorf("unsupported export type: %s", data)
 	}
+
+	if template != "" {
+		tex, ok := exporter.(export.TemplatedExporter)
+		if !ok {
+			panic(fmt.Errorf("exporter does not support templating: %T", exporter))
+		}
+
+		err := tex.ParseTemplate(template)
+		if err != nil {
+			return errors.Wrap(err, "parsing export template")
+		}
+	}
+
+	*e = Export{Exporter: exporter}
 
 	return nil
 }
