@@ -34,13 +34,15 @@ func (r *Runtime) Logger() *logrus.Logger {
 
 		switch len(r.Verbose) {
 		case 0:
-			logLevel = logrus.FatalLevel
+			logLevel = logrus.ErrorLevel
 		case 1:
 			logLevel = logrus.WarnLevel
 		case 2:
 			logLevel = logrus.InfoLevel
-		default:
+		case 3:
 			logLevel = logrus.DebugLevel
+		default:
+			logLevel = logrus.TraceLevel
 		}
 
 		r.logger = logrus.New()

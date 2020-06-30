@@ -33,6 +33,7 @@ type ResourceOptions struct {
 	Exclude       opt.ResourceMatcherList `long:"exclude" description:"exclude resource(s) from download (multiple)" value-name:"RESOURCE-GLOB"`
 	IgnoreMissing opt.ResourceMatcherList `long:"ignore-missing" description:"if a resource is not found, skip it rather than failing (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
 	Type          service.ResourceType    `long:"type" description:"type of resource to get (values: asset, archive, blob)" default:"asset" value-name:"TYPE"`
+	List          bool                    `long:"list" description:"list matching resources and stop before downloading"`
 
 	// TODO(1.x) remove
 	ShowResources bool `long:"show-resources" description:"show matched resources instead of downloading" hidden:"true"`
@@ -97,11 +98,15 @@ func (c *Command) applySettings() {
 
 	{ // TODO(1.x) remove
 		if c.ShowRef {
+			c.Runtime.Logger().Error("deprecated option: --show-ref was used, but --export is preferred")
+
 			c.NoDownload = true
 		}
 
 		if c.ShowResources {
-			c.NoDownload = true
+			c.Runtime.Logger().Error("deprecated option: --show-resources was used, but --list is preferred")
+
+			c.List = true
 		}
 	}
 }
@@ -206,20 +211,59 @@ func (c *Command) Execute(_ []string) error {
 		}
 	}
 
-	{ // TODO(1.x) remove
-		if c.ShowResources {
-			var results []string
+	// output = stderr since everything should be progress reports
+	stdout := os.Stderr
+	var finalStatus io.Writer
 
-			for _, resource := range resourceMap {
-				results = append(results, resource.GetName())
-			}
+	if !c.Runtime.Quiet {
+		l := len(resourceMap)
+		ls := ""
 
-			sort.Strings(results)
-
-			for _, result := range results {
-				fmt.Println(result)
-			}
+		if l != 1 {
+			ls = "s"
 		}
+
+		var downloadSizeMissing bool
+		var downloadSize int64
+
+		for _, resource := range resourceMap {
+			size := resource.GetSize()
+			if size == 0 {
+				downloadSizeMissing = true
+
+				break
+			}
+
+			downloadSize += size
+		}
+
+		var extra string
+
+		if !downloadSizeMissing {
+			extra = fmt.Sprintf(" (%s)", bytefmt.ByteSize(uint64(downloadSize)))
+		}
+
+		fmt.Fprintf(stdout, "Downloading %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
+
+		if c.NoProgress {
+			finalStatus = stdout
+		}
+	}
+
+	if c.List {
+		var results []string
+
+		for _, resource := range resourceMap {
+			results = append(results, resource.GetName())
+		}
+
+		sort.Strings(results)
+
+		for _, result := range results {
+			fmt.Println(result)
+		}
+
+		return nil
 	}
 
 	if c.Export != nil {
@@ -263,45 +307,6 @@ func (c *Command) Execute(_ []string) error {
 
 	if c.NoDownload {
 		return nil
-	}
-
-	// output = stderr since everything should be progress reports
-	stdout := os.Stderr
-	var finalStatus io.Writer
-
-	if !c.Runtime.Quiet {
-		l := len(resourceMap)
-		ls := ""
-
-		if l != 1 {
-			ls = "s"
-		}
-
-		var downloadSizeMissing bool
-		var downloadSize int64
-
-		for _, resource := range resourceMap {
-			size := resource.GetSize()
-			if size == 0 {
-				downloadSizeMissing = true
-
-				break
-			}
-
-			downloadSize += size
-		}
-
-		var extra string
-
-		if !downloadSizeMissing {
-			extra = fmt.Sprintf(" (%s)", bytefmt.ByteSize(uint64(downloadSize)))
-		}
-
-		fmt.Fprintf(stdout, "Downloading %d file%s%s from %s\n", l, ls, extra, ref.CanonicalRef())
-
-		if c.NoProgress {
-			finalStatus = stdout
-		}
 	}
 
 	var transfers []*transfer.Transfer
