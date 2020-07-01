@@ -1,6 +1,7 @@
 package gget
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -71,6 +72,7 @@ func (r *Runtime) NewHTTPClient() *http.Client {
 				ResponseHeaderTimeout: 15 * time.Second,
 				ExpectContinueTimeout: 5 * time.Second,
 			},
+			ua: r.app.Version(),
 		},
 	}
 }
@@ -78,10 +80,18 @@ func (r *Runtime) NewHTTPClient() *http.Client {
 type roundTripLogger struct {
 	l  *logrus.Logger
 	rt http.RoundTripper
+	ua string
 }
 
 func (rtl roundTripLogger) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	rtl.l.Debugf("http: %s %s", req.Method, req.URL.String())
+
+	ua := rtl.ua
+	if rua := req.Header.Get("user-agent"); rua != "" {
+		ua = fmt.Sprintf("%s %s", rua, ua)
+	}
+
+	req.Header.Set("user-agent", ua)
 
 	res, err := rtl.rt.RoundTrip(req)
 
