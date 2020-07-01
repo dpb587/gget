@@ -22,7 +22,7 @@ func (e *Export) UnmarshalFlag(data string) error {
 		exporter = &export.JSONPathExporter{}
 		template = strings.TrimPrefix(data, "jsonpath=")
 	} else if data == "jsonpath" {
-		return fmt.Errorf("jsonpath must include a template")
+		return fmt.Errorf("jsonpath must include a template (e.g. `jsonpath='{.origin.ref}'`)")
 	} else if data == "yaml" {
 		exporter = export.YAMLExporter{}
 	} else if data == "plain" {
@@ -31,7 +31,7 @@ func (e *Export) UnmarshalFlag(data string) error {
 		// 	exporter = &export.GoTemplateExporter{}
 		// 	template = strings.TrimPrefix(data, "go-template=")
 		// } else if data == "go-template" {
-		// 	return fmt.Errorf("go-template must include a template")
+		// 	return fmt.Errorf("go-template must include a template (e.g. `go-template='{{.Origin.Ref}}'`")
 	} else {
 		return fmt.Errorf("unsupported export type: %s", data)
 	}
