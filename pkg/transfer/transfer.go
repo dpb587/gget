@@ -87,8 +87,6 @@ func (w Transfer) Execute(ctx context.Context) error {
 
 		assetHandle, err = w.origin.Open(ctx)
 		if err != nil {
-			w.bars[1].Abort(false)
-
 			return errors.Wrap(err, "connecting")
 		}
 
@@ -116,8 +114,6 @@ func (w Transfer) Execute(ctx context.Context) error {
 			}
 
 			if len(writers) == 0 {
-				w.bars[2].Abort(false)
-
 				return fmt.Errorf("no download target found")
 			}
 
@@ -126,8 +122,6 @@ func (w Transfer) Execute(ctx context.Context) error {
 
 		_, err := io.Copy(dw, r)
 		if err != nil {
-			w.bars[2].Abort(false)
-
 			return errors.Wrap(err, "downloading")
 		}
 
@@ -144,10 +138,6 @@ func (w Transfer) Execute(ctx context.Context) error {
 
 			err := step.Execute(ctx, &state)
 			if err != nil {
-				if state.Bar != nil {
-					state.Bar.Abort(false)
-				}
-
 				return errors.Wrapf(err, "processing step %d", stepIdx)
 			}
 
@@ -161,25 +151,38 @@ func (w Transfer) Execute(ctx context.Context) error {
 	}
 
 	{ // done
-		name := fmt.Sprintf("done")
+		summary := fmt.Sprintf("done")
 		if len(results) > 0 {
-			name = fmt.Sprintf("%s (%s)", name, strings.Join(results, "; "))
+			summary = fmt.Sprintf("%s (%s)", summary, strings.Join(results, "; "))
 		}
 
-		pbb := w.newBar(w.pb, w.bars[len(w.steps)+3], "√", 1, decor.Name(
-			name,
-			decor.WC{W: len(name), C: decor.DidentRight},
-		))
-
-		w.bars[len(w.steps)+3].SetTotal(1, true)
-		pbb.SetTotal(1, true)
-
-		if w.finalStatus != nil {
-			fmt.Fprintf(w.finalStatus, "%s %s\n", w.GetSubject(), name)
-		}
+		w.finalize("√", summary)
 	}
 
 	return nil
+}
+
+func (w Transfer) finalize(status, description string) {
+	// make sure everything is closed out
+	for _, bar := range w.bars {
+		if bar == nil || bar.Completed() {
+			continue
+		}
+
+		bar.SetTotal(1, true)
+	}
+
+	pbb := w.newBar(w.pb, w.bars[len(w.steps)+3], status, 1, decor.Name(
+		description,
+		decor.WC{W: len(description), C: decor.DidentRight},
+	))
+
+	w.bars[len(w.steps)+3].SetTotal(1, true)
+	pbb.SetTotal(1, true)
+
+	if w.finalStatus != nil {
+		fmt.Fprintf(w.finalStatus, "%s %s\n", w.GetSubject(), description)
+	}
 }
 
 func (w Transfer) newBar(pb *mpb.Progress, pbp *mpb.Bar, spinner string, count int64, msg decor.Decorator) *mpb.Bar {

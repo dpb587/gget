@@ -43,6 +43,7 @@ type DownloadOptions struct {
 	CD             string                  `long:"cd" description:"change to directory before writing files" value-name:"DIR"`
 	Executable     opt.ResourceMatcherList `long:"executable" description:"apply executable permissions to downloads (multiple)" value-name:"[RESOURCE-GLOB]" optional:"true" optional-value:"*"`
 	Export         *opt.Export             `long:"export" description:"export details about the download profile (values: json, jsonpath=TEMPLATE, plain, yaml)" value-name:"FORMAT"`
+	FailFast       bool                    `long:"fail-fast" description:"fail and exit immediately if a download fails"`
 	NoDownload     bool                    `long:"no-download" description:"do not perform any downloads"`
 	NoProgress     bool                    `long:"no-progress" description:"do not show live-updating progress during downloads"`
 	Parallel       int                     `long:"parallel" description:"maximum number of parallel downloads" default:"3" value-name:"NUM"`
@@ -316,7 +317,7 @@ func (c *Command) Execute(_ []string) error {
 		pbO = ioutil.Discard
 	}
 
-	batch := transfer.NewBatch(transfers, c.Parallel, pbO)
+	batch := transfer.NewBatch(c.Runtime.Logger(), transfers, c.Parallel, pbO)
 
-	return batch.Transfer(ctx)
+	return batch.Transfer(ctx, c.FailFast)
 }
