@@ -50,11 +50,18 @@ func (lr LookupRef) SatisfiesVersion(actual string) (bool, error) {
 func (lr LookupRef) ComplexRefModes() []string {
 	var res []string
 
-	if len(lr.RefVersions) > 0 {
+	lv := len(lr.RefVersions)
+	if lv > 0 {
 		res = append(res, "version")
 	}
 
-	if len(lr.RefStability) > 0 {
+	ls := len(lr.RefStability)
+	if ls > 0 {
+		if lv == 0 && ls == 1 && lr.RefStability[0] == "stable" {
+			// explicit default; shortcut this to allow services to use cheaper APIs
+			return nil
+		}
+
 		res = append(res, "stability")
 	}
 
