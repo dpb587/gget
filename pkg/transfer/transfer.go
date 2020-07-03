@@ -34,7 +34,7 @@ func (w *Transfer) GetSubject() string {
 
 func (w *Transfer) Prepare(pb *mpb.Progress) {
 	w.pb = pb
-	w.bars = make([]*mpb.Bar, len(w.steps)+4)
+	w.bars = make([]*mpb.Bar, len(w.steps)+5)
 
 	w.bars[0] = w.newBar(pb, nil, " ", 1, decor.Name(
 		"waiting",
@@ -163,6 +163,11 @@ func (w Transfer) Execute(ctx context.Context) error {
 }
 
 func (w Transfer) finalize(status, description string) {
+	w.bars[len(w.steps)+4] = w.newBar(w.pb, w.bars[len(w.steps)+3], status, 1, decor.Name(
+		description,
+		decor.WC{W: len(description), C: decor.DidentRight},
+	))
+
 	// make sure everything is closed out
 	for _, bar := range w.bars {
 		if bar == nil || bar.Completed() {
@@ -171,14 +176,6 @@ func (w Transfer) finalize(status, description string) {
 
 		bar.SetTotal(1, true)
 	}
-
-	pbb := w.newBar(w.pb, w.bars[len(w.steps)+3], status, 1, decor.Name(
-		description,
-		decor.WC{W: len(description), C: decor.DidentRight},
-	))
-
-	w.bars[len(w.steps)+3].SetTotal(1, true)
-	pbb.SetTotal(1, true)
 
 	if w.finalStatus != nil {
 		fmt.Fprintf(w.finalStatus, "%s %s\n", w.GetSubject(), description)
