@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	"github.com/dpb587/gget/pkg/checksum"
 	"github.com/dpb587/gget/pkg/service"
@@ -43,6 +44,14 @@ func (r *ReleaseRef) GetMetadata(ctx context.Context) (service.RefMetadata, erro
 			{
 				Name:  "github-release-id",
 				Value: fmt.Sprintf("%d", r.release.GetID()),
+			},
+			{
+				Name:  "github-release-published-at",
+				Value: r.release.GetPublishedAt().Format(time.RFC3339),
+			},
+			{
+				Name:  "github-release-body",
+				Value: r.release.GetBody(),
 			},
 		},
 		tagMetadata...,
