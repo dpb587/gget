@@ -386,7 +386,7 @@ gget: error: preparing transfer of gget-0.4.0-linux-amd64: acceptable checksum r
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>--export=json</strong> --no-download --quiet \
   | jq '.metadata | from_entries'
 <div class="cmd-result">{
-<div v-for="metadatum in latest.metadata" v-bind:key="metadatum.key" v-text="`  ${JSON.stringify(metadatum.key)}: ${JSON.stringify(metadatum.value)},`" />}</div></code></pre>
+<div v-for="metadatum in latest.metadata.filter((v) => v.key != 'github-release-body')" v-bind:key="metadatum.key" v-text="`  ${JSON.stringify(metadatum.key)}: ${JSON.stringify(metadatum.value)},`" />}</div></code></pre>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>--export=plain</strong> --no-download --quiet \
   | awk '{ if ( $1 == "resource-checksum" ) { print $4 "  " $2 } }'
 <div class="cmd-result"><div v-for="resource in latest.resources" v-bind:key="resource.name" v-text="`${resource.checksums[0].data}  ${resource.name}`" /></div></code></pre>
@@ -428,7 +428,7 @@ fi</code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
             A <code>gget</code> Docker image is available and easily integrates as a build stage for downloads. It includes tools for uncompressing archives, and the default working directory is <code>/result</code> for access in later stages.
           </p>
-          <pre class="my-3 -mx-4"><code>FROM docker.pkg.github.com/dpb587/gget/gget as gget
+          <pre class="my-3 -mx-4"><code>FROM dpb587/gget as gget
 RUN gget github.com/cloudfoundry/bosh-cli --ref-version=5.x \
       --executable bosh=bosh-cli-*-linux-amd64
 RUN gget github.com/cloudfoundry/bosh-bootloader \
