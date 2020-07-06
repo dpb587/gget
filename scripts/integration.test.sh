@@ -15,7 +15,7 @@ cd tmp/integrationtest/workdir
 ../gget github.com/dpb587/gget --ref-version=0.2.x --export=json '*linux*' > export.json
 
 diff <( shasum * ) - <<EOF
-c590780b597628823070447ec4d2190a206a2ef4  export.json
+f43df59ff5b0ad32362ec72655017d6deed3704f  export.json
 734d4ef1448dd9892852ae370933e7629fe528d5  gget-0.2.0-linux-amd64
 EOF
 
