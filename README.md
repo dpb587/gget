@@ -7,7 +7,7 @@ An easier way to find and automate file downloads from GitHub and GitLab reposit
  * Public & Private Repos - API-based access for private resources
  * Tags, Branches, and Commits - also semver-based constraint matching
  * Archives, Assets, and Blobs - download any type of resource from repos
- * Built-in File Operations - easy rename, executable, and streaming ops
+ * Built-in File Operations - easy rename, binary, and stream options
  * Checksum Verification - verify downloads by SHA (if published)
  * Open-Source Project - contribute and discuss at [dpb587/gget](https://github.com/dpb587/gget)
 

@@ -16,7 +16,7 @@
       </div>
     </div>
     <div class="navbar py-2 md:py-1">
-      <span class="mx-1 md:mx-2 text-gray-400">Jump to</span>
+      <span class="ml-1 md:ml-2 text-gray-400">Jump to</span>
       <a href="#install" class="mx-1 md:mx-2"><fa icon="chevron-down" /> <span>Install</span></a>
       <a href="#introduction" class="mx-1 md:mx-2"><fa icon="play" /> <span>Getting Started</span></a>
       <a href="#advanced" class="mx-1 md:mx-2"><fa icon="graduation-cap" /> <span>Advanced</span></a>
@@ -42,15 +42,15 @@
         </ul>
       </div>
 
-      <div class="bg-white border border-gray-200 sm:rounded-lg sm:shadow">
+      <div class="bg-white border border-gray-200 sm:rounded-lg sm:shadow mt-8 sm:mt-0">
         <div class="px-4 py-5 sm:px-6">
           <div class="-ml-4 -mt-4 flex justify-between items-center flex-wrap sm:flex-no-wrap">
-            <div id="install" class="ml-4 pt-4">
+            <div id="install" class="ml-4 pl-1 sm:pl-0 pt-3 sm:pt-4 pb-1 sm:pb-0">
               <h2 class="text-xl leading-7 font-medium text-gray-900">
                 Installation
               </h2>
               <p class="mt-1 text-lg leading-6 text-gray-700">
-                The latest version is {{latest.origin.ref}} (<a :href="`https://github.com/dpb587/gget/releases/tag/${latest.origin.ref}`">release notes</a>)
+                Version {{latest.origin.ref.replace(/^v/, '')}} (<a :href="`https://github.com/dpb587/gget/releases/tag/${latest.origin.ref}`">release notes</a>)
               </p>
             </div>
             <div class="ml-4 mt-2 md:mt-4 flex-shrink-0">
@@ -138,8 +138,7 @@
             </div>
           </div>
           <div class="sm:-ml-1 sm:pl-16 mt-4">
-            <pre><code><span class="cmd-prompt">$ </span>$wc = New-Object System.Net.WebClient
-<span class="cmd-prompt">$ </span>$wc.DownloadFile("https://github.com/dpb587/gget/releases/download/{{latest.origin.ref}}/{{activePlatformResource.name}}", "gget.exe")
+            <pre><code><span class="cmd-prompt">$ </span>( New-Object System.Net.WebClient ).DownloadFile("https://github.com/dpb587/gget/releases/download/{{latest.origin.ref}}/{{activePlatformResource.name}}", "$PWD\gget.exe")
 <span class="cmd-prompt">$ </span>( Get-FileHash .\gget.exe -Algorithm {{ activePlatformResource.checksums[0].algo.toUpperCase() }} ).Hash -eq "{{ activePlatformResource.checksums[0].data.toUpperCase() }}"</code></pre>
           </div>
         </div>
@@ -197,7 +196,7 @@
       </div>
       
       <div>
-        <div id="introduction" class="text-center mt-8 pt-16">
+        <div id="introduction" class="text-center mt-4 sm:mt-6 pt-8 sm:pt-12">
           <h2 class="text-3xl leading-8 tracking-tight font-bold text-gray-900 sm:text-4xl sm:leading-6">
             Getting Started
           </h2>
@@ -307,7 +306,7 @@ gget-{{latest.origin.ref}}.zip</div></code></pre>
       </div>
       
       <div>
-        <div id="advanced" class="text-center mt-8 pt-16">
+        <div id="advanced" class="text-center mt-4 sm:mt-6 pt-8 sm:pt-12">
           <h2 class="text-3xl leading-8 tracking-tight font-bold text-gray-900 sm:text-4xl sm:leading-6">
             Advanced
           </h2>
@@ -403,7 +402,7 @@ fi</code></pre>
       </div>
       
       <div>
-        <div id="cli" class="text-center mt-8 pt-16">
+        <div id="cli" class="text-center mt-4 sm:mt-6 pt-8 sm:pt-12">
           <h2 class="text-3xl leading-8 tracking-tight font-bold text-gray-900 sm:text-4xl sm:leading-6">
             Reference
           </h2>
@@ -417,7 +416,7 @@ fi</code></pre>
       </div>
 
       <div>
-        <div id="docker" class="text-center mt-8 pt-16">
+        <div id="docker" class="text-center mt-4 sm:mt-6 pt-8 sm:pt-12">
           <h2 class="text-3xl leading-8 tracking-tight font-bold text-gray-900 sm:text-4xl sm:leading-6">
             Docker
           </h2>
@@ -535,7 +534,7 @@ export default {
         {
           icon: 'random',
           label: 'Built-in File Operations',
-          description: 'Easy rename, executable, and streaming ops.'
+          description: 'Easy rename, binary, and stream options.'
         },
         {
           icon: 'check-double',
