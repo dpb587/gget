@@ -2,6 +2,7 @@ package gitlab
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -44,7 +45,13 @@ func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*
 		}
 	}
 
-	res, err := gitlab.NewClient(token, gitlab.WithHTTPClient(cf.httpClientFactory()))
+	var clientOpts = []gitlab.ClientOptionFunc{
+		gitlab.WithHTTPClient(cf.httpClientFactory()),
+		// TODO figure out https configurability
+		gitlab.WithBaseURL(fmt.Sprintf("https://%s/", lookupRef.Ref.Server)),
+	}
+
+	res, err := gitlab.NewClient(token, clientOpts...)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating client")
 	}

@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -54,7 +55,19 @@ func (cf ClientFactory) Get(ctx context.Context, lookupRef service.LookupRef) (*
 		}
 	}
 
-	return github.NewClient(httpClient), nil
+	if lookupRef.Ref.Server == "github.com" {
+		return github.NewClient(httpClient), nil
+	}
+
+	// TODO figure out https configurability
+	baseURL := fmt.Sprintf("https://%s", lookupRef.Ref.Server)
+
+	c, err := github.NewEnterpriseClient(baseURL, baseURL, httpClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "building enterprise client")
+	}
+
+	return c, nil
 }
 
 func (cf ClientFactory) loadNetrc(ctx context.Context, lookupRef service.LookupRef) (oauth2.TokenSource, error) {
