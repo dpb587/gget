@@ -3,6 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"path"
 	"strings"
@@ -13,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-const ServiceName = "github"
 
 type Service struct {
 	log           *logrus.Logger
@@ -31,8 +30,32 @@ func NewService(log *logrus.Logger, clientFactory *ClientFactory) *Service {
 var _ service.RefResolver = &Service{}
 var _ service.ConditionalRefResolver = &Service{}
 
-func (s Service) IsRefSupported(_ context.Context, lookupRef service.LookupRef) bool {
-	return lookupRef.Ref.Service == ServiceName || lookupRef.Ref.Server == "github.com"
+func (s Service) ServiceName() string {
+	return "github"
+}
+
+func (s Service) IsKnownServer(_ context.Context, lookupRef service.LookupRef) bool {
+	return lookupRef.Ref.Server == "github.com"
+}
+
+func (s Service) IsDetectedServer(_ context.Context, lookupRef service.LookupRef) bool {
+	res, err := s.clientFactory.httpClientFactory().Get(fmt.Sprintf("https://%s/api/v3/", lookupRef.Ref.Server))
+	if err != nil {
+		s.log.Debugf("github detection attempt error: %s", errors.Wrap(err, "requesting GET /api/v3/"))
+
+		return false
+	} else if res.StatusCode != http.StatusOK {
+		return false
+	}
+
+	buf, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		s.log.Debugf("github detection attempt error: %s", errors.Wrap(err, "reading body"))
+
+		return false
+	}
+
+	return strings.Contains(string(buf), `"organization_repositories_url"`)
 }
 
 func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (service.ResolvedRef, error) {
@@ -42,7 +65,7 @@ func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (s
 	}
 
 	ref := lookupRef.Ref
-	ref.Service = ServiceName
+	ref.Service = s.ServiceName()
 
 	rr := &refResolver{
 		client:       client,

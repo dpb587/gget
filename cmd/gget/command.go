@@ -113,30 +113,13 @@ func (c *Command) applySettings() {
 }
 
 func (c *Command) RefResolver(ref service.Ref) (service.RefResolver, error) {
-	var resolvers []service.ConditionalRefResolver
+	res := service.NewMultiRefResolver(
+		c.Runtime.Logger(),
+		github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
+		gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
+	)
 
-	if ref.Service == "" || ref.Service == github.ServiceName {
-		resolvers = append(
-			resolvers,
-			github.NewService(c.Runtime.Logger(), github.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
-		)
-	}
-
-	if ref.Service == "" || ref.Service == gitlab.ServiceName {
-		resolvers = append(
-			resolvers,
-			gitlab.NewService(c.Runtime.Logger(), gitlab.NewClientFactory(c.Runtime.Logger(), c.Runtime.NewHTTPClient)),
-		)
-	}
-
-	switch len(resolvers) {
-	case 0:
-		return nil, fmt.Errorf("unsupported service: %s", ref.Service)
-	case 1:
-		return resolvers[0], nil
-	}
-
-	return service.NewMultiRefResolver(resolvers...), nil
+	return res, nil
 }
 
 func (c *Command) Execute(_ []string) error {

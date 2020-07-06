@@ -15,8 +15,6 @@ import (
 	"github.com/xanzy/go-gitlab"
 )
 
-const ServiceName = "gitlab"
-
 type Service struct {
 	log           *logrus.Logger
 	clientFactory *ClientFactory
@@ -32,8 +30,31 @@ func NewService(log *logrus.Logger, clientFactory *ClientFactory) *Service {
 var _ service.RefResolver = &Service{}
 var _ service.ConditionalRefResolver = &Service{}
 
-func (s Service) IsRefSupported(_ context.Context, lookupRef service.LookupRef) bool {
-	return lookupRef.Ref.Service == ServiceName || lookupRef.Ref.Server == "gitlab.com"
+func (s Service) ServiceName() string {
+	return "gitlab"
+}
+
+func (s Service) IsKnownServer(_ context.Context, lookupRef service.LookupRef) bool {
+	return lookupRef.Ref.Server == "gitlab.com"
+}
+
+func (s Service) IsDetectedServer(_ context.Context, lookupRef service.LookupRef) bool {
+	res, err := s.clientFactory.httpClientFactory().Head(fmt.Sprintf("https://%s/users/sign_in", lookupRef.Ref.Server))
+	if err != nil {
+		s.log.Debugf("gitlab detection attempt error: %s", errors.Wrap(err, "requesting HEAD /users/sign_in"))
+
+		return false
+	} else if res.StatusCode != http.StatusOK {
+		return false
+	}
+
+	for _, cookie := range res.Cookies() {
+		if cookie.Name == "_gitlab_session" {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (service.ResolvedRef, error) {
@@ -43,7 +64,7 @@ func (s Service) ResolveRef(ctx context.Context, lookupRef service.LookupRef) (s
 	}
 
 	canonicalRef := lookupRef.Ref
-	canonicalRef.Service = ServiceName
+	canonicalRef.Service = s.ServiceName()
 
 	var cachedRelease *gitlab.Release
 
