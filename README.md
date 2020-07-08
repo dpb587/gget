@@ -63,6 +63,7 @@ When downloading files, `gget` attempts to validate checksums when they are foun
 
  * `wget`/`curl` -- if you want to manually maintain version download URLs and private signing
  * [`hub release download ...`](https://github.com/github/hub) -- if you already have `git` configured and a cloned GitHub repository
+ * [`fetch`](https://github.com/gruntwork-io/fetch) -- similar tool and capabilities for GitHub (discovered this after gget@0.5.2)
 
 ## License
 
