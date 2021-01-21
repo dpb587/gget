@@ -7,10 +7,15 @@ import (
 
 type ResourceTransfer struct {
 	RemoteMatch ResourceMatcher
-	LocalPath   string
+	LocalDir string
+	LocalName   string
 }
 
 type ResourceTransferList []ResourceTransfer
+
+func (o *ResourceTransfer) LocalPath() string {
+	return filepath.Join(o.LocalDir, o.LocalName)
+}
 
 func (o *ResourceTransfer) Resolve(remote string) (ResourceTransfer, bool) {
 	match := o.RemoteMatch.Match(remote)
@@ -20,13 +25,12 @@ func (o *ResourceTransfer) Resolve(remote string) (ResourceTransfer, bool) {
 
 	res := ResourceTransfer{
 		RemoteMatch: ResourceMatcher(remote),
-		LocalPath:   o.LocalPath,
+		LocalDir: o.LocalDir,
+		LocalName:   o.LocalName,
 	}
 
-	if res.LocalPath == "" {
-		res.LocalPath = remote
-	} else if strings.HasSuffix(res.LocalPath, "/") {
-		res.LocalPath = filepath.Join(res.LocalPath, string(res.RemoteMatch))
+	if res.LocalName == "" {
+		res.LocalName = remote
 	}
 
 	return res, true
@@ -34,14 +38,16 @@ func (o *ResourceTransfer) Resolve(remote string) (ResourceTransfer, bool) {
 
 func (o *ResourceTransfer) UnmarshalFlag(data string) error {
 	dataSplit := strings.SplitN(data, "=", 2)
+	localPath := ""
 
 	if len(dataSplit) == 2 {
 		o.RemoteMatch = ResourceMatcher(dataSplit[1])
-		o.LocalPath = dataSplit[0]
+		localPath = dataSplit[0]
 	} else {
 		o.RemoteMatch = ResourceMatcher(dataSplit[0])
-		o.LocalPath = ""
 	}
+
+	o.LocalDir, o.LocalName = filepath.Split(localPath)
 
 	if err := o.RemoteMatch.Validate(); err != nil {
 		return err

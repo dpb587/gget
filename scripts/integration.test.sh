@@ -10,9 +10,9 @@ rm -fr tmp/integrationtest/workdir
 mkdir tmp/integrationtest/workdir
 cd tmp/integrationtest/workdir
 
-# dump-info, ref-version constraints, match constraint
+# dump-info, ref-version constraints, match constraint, cd
 
-../gget github.com/dpb587/gget --ref-version=0.2.x --export=json '*linux*' > export.json
+../gget github.com/dpb587/gget --ref-version=0.2.x --export=json --cd="${PWD}" '*linux*' > export.json
 
 diff <( shasum * ) - <<EOF
 f43df59ff5b0ad32362ec72655017d6deed3704f  export.json

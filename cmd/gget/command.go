@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"code.cloudfoundry.org/bytefmt"
@@ -79,21 +78,23 @@ func (c *Command) applySettings() {
 
 	if c.Stdout {
 		for resourceIdx, resource := range c.Args.Resources {
-			if resource.LocalPath != "" {
+			if resource.LocalPath() != "" {
 				continue
 			}
 
-			c.Args.Resources[resourceIdx].LocalPath = "-"
+			c.Args.Resources[resourceIdx].LocalName = "-"
 		}
 	}
 
 	if c.CD != "" {
 		for resourceIdx, resource := range c.Args.Resources {
-			if resource.LocalPath == "-" {
+			if resource.LocalPath() == "-" {
+				continue
+			} else if resource.LocalDir != "" {
 				continue
 			}
 
-			c.Args.Resources[resourceIdx].LocalPath = filepath.Join(c.CD, resource.LocalPath)
+			c.Args.Resources[resourceIdx].LocalDir = c.CD
 		}
 	}
 
@@ -187,11 +188,13 @@ func (c *Command) Execute(_ []string) error {
 				panic("TODO should always match by now?")
 			}
 
-			if _, found := resourceMap[resolved.LocalPath]; found {
-				return fmt.Errorf("target file already specified: %s", resolved.LocalPath)
+			localPath := resolved.LocalPath()
+
+			if _, found := resourceMap[localPath]; found {
+				return fmt.Errorf("target file already specified: %s", localPath)
 			}
 
-			resourceMap[resolved.LocalPath] = candidate
+			resourceMap[localPath] = candidate
 		}
 	}
 
