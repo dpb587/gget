@@ -16,14 +16,12 @@ jobs:
         version="$( echo "${{ github.ref }}" | sed 's#refs/tags/v##' )"
         echo ::set-output name=version::"$version"
 
-        mkdir tmp
+        ./scripts/build.dockerized.sh "$version"
         
         if [[ -e "docs/releases/v${version}.md" ]]; then
           sed '1{/^---$/!q;};1,/^---$/d' "docs/releases/v${version}.md" > tmp/release-body
           echo "" >> tmp/release-body
         fi
-
-        ./scripts/build.dockerized.sh "$version"
 
         cd tmp/build
 
