@@ -15,11 +15,22 @@ if [ -z "${arch_list:-}" ]; then
   arch_list="amd64"
 fi
 
-rm -fr tmp/build
-mkdir -p tmp/build
-
-commit=$( git rev-parse HEAD | cut -c-10 )$( git diff-index --quiet HEAD -- || echo "+dirty" )
 built=$( date -u +%Y-%m-%dT%H:%M:%S+00:00 )
+commit=$( git rev-parse HEAD | cut -c-10 )
+
+if [[ $( git clean -dnx | wc -l ) -gt 0 ]] ; then
+  commit="${commit}+dirty"
+
+  if [[ "${version}" != "0.0.0" ]]; then
+    echo "ERROR: building an official version requires a clean repository"
+    echo "WARN: refusing to clean repository"
+    git clean -dnx
+
+    exit 1
+  fi
+fi
+
+mkdir -p tmp/build
 
 export CGO_ENABLED=0
 
