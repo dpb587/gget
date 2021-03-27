@@ -59,17 +59,17 @@ func checkReleaseAssetChecksumBehavior(releaseAsset github.ReleaseAsset) (checks
 
 	if extLower == "md5" || extLower == "sha1" || extLower == "sha256" || extLower == "sha384" || extLower == "sha512" {
 		return checksum.Algorithm(extLower), strings.TrimSuffix(name, ext), true
-	} else if nameLower == "md5sums" || nameLower == "md5sums.txt" {
+	} else if nameLower == "md5sum" || nameLower == "md5sums" || nameLower == "md5sum.txt" || nameLower == "md5sums.txt" {
 		return checksum.MD5, "", true
-	} else if nameLower == "sha1sums" || nameLower == "sha1sums.txt" {
+	} else if nameLower == "sha1sum" || nameLower == "sha1sums" || nameLower == "sha1sum.txt" || nameLower == "sha1sums.txt" {
 		return checksum.SHA1, "", true
-	} else if nameLower == "sha384sums" || nameLower == "sha384sums.txt" {
+	} else if nameLower == "sha384sum" || nameLower == "sha384sums" || nameLower == "sha384sum.txt" || nameLower == "sha384sums.txt" {
 		return checksum.SHA384, "", true
-	} else if nameLower == "sha256sums" || nameLower == "sha256sums.txt" {
+	} else if nameLower == "sha256sum" || nameLower == "sha256sums" || nameLower == "sha256sum.txt" || nameLower == "sha256sums.txt" {
 		return checksum.SHA256, "", true
-	} else if nameLower == "sha512sums" || nameLower == "sha512sums.txt" {
+	} else if nameLower == "sha512sum" || nameLower == "sha512sums" || nameLower == "sha512sum.txt" || nameLower == "sha512sums.txt" {
 		return checksum.SHA512, "", true
-	} else if nameLower == "CHECKSUM" || nameLower == "CHECKSUMS" || strings.HasSuffix(nameLower, "checksums.txt") {
+	} else if nameLower == "checksum" || nameLower == "checksums" || strings.HasSuffix(nameLower, "checksum.txt") || strings.HasSuffix(nameLower, "checksums.txt") {
 		return checksum.Algorithm("unknown"), "", true
 	}
 
