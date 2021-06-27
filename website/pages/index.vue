@@ -234,7 +234,7 @@
 √ gget-{{latestOriginRefSemver}}-darwin-amd64 done (sha256 OK)
 √ gget-{{latestOriginRefSemver}}-linux-amd64  done (sha256 OK)</div></code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            When patterns may match more resources than desired, use the <strong><code>--exclude</code></strong> option to restrict further.
+            If patterns may match more resources than desired, use the <strong><code>--exclude</code></strong> option to restrict further.
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>--exclude='*-amd64'</strong>
 <div class="cmd-result">Found 1 file (10.6M) from github.com/dpb587/gget@{{latest.origin.ref}}
@@ -252,7 +252,7 @@
             Remote Servers
           </h2>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            These examples have been using public repositories from <a href="https://github.com/">GitHub</a>; but <code>gget</code> also supports <a href="https://gitlab.com/">GitLab</a> and self-hosted installations of the two. If the service is not automatically detected, the <strong><code>--service</code></strong> option may be used to override the API used to either <code>github</code> or <code>gitlab</code>.
+            These examples have been using public repositories from <a href="https://github.com/">GitHub</a>, but <code>gget</code> also supports <a href="https://gitlab.com/">GitLab</a> and self-hosted installations of the two. If the service is not automatically detected, the <strong><code>--service</code></strong> option may be used to override the API used to either <code>github</code> or <code>gitlab</code>.
           </p>
           <p class="mt-3 text-lg leading-7 text-gray-800">
             To access private repositories, be sure to configure your access token through the appropriate environment variable or a machine password in your <a href="https://ec.haxx.se/usingcurl/usingcurl-netrc">~/.netrc</a> file. For GitHub, the <strong><code>$GITHUB_TOKEN</code></strong> environment variable is used, and for GitLab it is <strong><code>$GITLAB_TOKEN</code></strong>.
@@ -292,7 +292,7 @@
             Troubleshooting
           </h2>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            If you are unable to find the resources you expect, try verifying <code>gget</code> sees it with the <strong><code>--list</code></strong> option.
+            If you are unable to find the resources you expect, try verifying <code>gget</code> sees them with the <strong><code>--list</code></strong> option.
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget --type=archive <strong>--list</strong>
 <div class="cmd-result">Found 2 files from github.com/dpb587/gget@{{latest.origin.ref}}
@@ -320,7 +320,7 @@ gget-{{latest.origin.ref}}.zip</div></code></pre>
             Finding Versions
           </h2>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            By default, releases tagged as "pre-release" are not used when finding the latest version. To find the latest pre-release, use the <strong><code>--ref-stability</code></strong> option and specify <code>pre-release</code> (or, if you don't care if it is pre-release or stable, use <code>any</code>).
+            By default, releases tagged as "pre-release" are not used when finding the latest version. To find the latest pre-release, use the <strong><code>--ref-stability</code></strong> option and specify <code>pre-release</code> (or, if you don't care whether it is pre-release or stable, use <code>any</code>).
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget-test <strong>--ref-stability=pre-release</strong> '*linux*'
 <div class="cmd-result">Found 1 file (11.7M) from github.com/dpb587/gget-test@v0.5.0-rc.1
@@ -338,7 +338,7 @@ gget-{{latest.origin.ref}}.zip</div></code></pre>
             Manipulating Files
           </h2>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            To save a resource under a different local name (or path), prefix it to the resource name with an <strong><code>=</code></strong>.
+            To save a resource under a different local name (or path), prefix it to the resource name with an equals (<strong><code>=</code></strong>).
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>/tmp/gget=</strong>'*linux*'
 <div class="cmd-result">Found 1 file (11.7M) from github.com/dpb587/gget@{{latest.origin.ref}}
@@ -376,10 +376,10 @@ gget: error: preparing transfer of gget-0.4.0-linux-amd64: acceptable checksum r
             Script Integrations
           </h2>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            The only output sent to <code>STDOUT</code> is from downloads configured to write there (or the <code>--export</code> option is used). All other information (status updates, progress, and log messages) will be written to <code>STDERR</code>. If you want to reduce runtime output or rely on your own messaging, use the <strong><code>--quiet</code></strong> option.
+            The only output sent to <code>STDOUT</code> is from downloads configured to write there (or when the <code>--export</code> option is used). All other information (status updates, progress, and log messages) will be written to <code>STDERR</code>. If you want to reduce runtime output or rely on your own messaging, use the <strong><code>--quiet</code></strong> option.
           </p>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            The <strong><code>--export</code></strong> option is helpful for capturing details about matched resources, the resolved origin, and some additional metadata. It supports outputs for JSON (<a href="latest.json">example</a>), JSONPath-like (<a href="https://kubernetes.io/docs/reference/kubectl/jsonpath/">docs</a>), YAML, and a plain format.
+            The <strong><code>--export</code></strong> option is helpful for capturing details about matched resources, the resolved origin, and some additional metadata. It supports output for JSON (<a href="latest.json">example</a>), JSONPath-like (<a href="https://kubernetes.io/docs/reference/kubectl/jsonpath/">docs</a>), YAML, and a plain format.
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>--export=jsonpath='{.origin.ref}'</strong> --no-download --quiet
 <div class="cmd-result"><span v-text="latest.origin.ref" /></div></code></pre>
@@ -391,7 +391,7 @@ gget: error: preparing transfer of gget-0.4.0-linux-amd64: acceptable checksum r
   | awk '{ if ( $1 == "resource-checksum" ) { print $4 "  " $2 } }'
 <div class="cmd-result"><div v-for="resource in latest.resources" v-bind:key="resource.name" v-text="`${resource.checksums[0].data}  ${resource.name}`" /></div></code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            The <strong><code>--version</code></strong> option can optionally be passed a constraint if you need to rely on a particular version. When the constraint is not met, the command will exit with an error.
+            The <strong><code>--version</code></strong> option can optionally be passed a constraint if you need to rely on a particular version of <code>gget</code> itself. When the constraint is not met, the command will exit with an error.
           </p>
           <pre class="my-3 -mx-4"><code>if ! gget --version<strong>='>=0.5'</strong> >/dev/null 2>&amp;1
 then
@@ -407,7 +407,7 @@ fi</code></pre>
             Reference
           </h2>
           <p class="max-w-2xl mx-auto text-xl leading-6 text-gray-700 sm:mt-4">
-            Showing <code>gget --help</code> from <span v-text="latest.origin.ref" />.
+            Showing <code>gget --help</code> from <code v-text="latest.origin.ref" />.
           </p>
         </div>
         <div class="px-4 mt-8">
