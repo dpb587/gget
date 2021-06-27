@@ -1,0 +1,64 @@
+{
+  "origin": {
+    "string": "github.com/dpb587/gget@v0.5.5",
+    "service": "github",
+    "server": "github.com",
+    "owner": "dpb587",
+    "repository": "gget",
+    "ref": "v0.5.5"
+  },
+  "metadata": [
+    {
+      "key": "commit",
+      "value": "6d678b32c3a60b9e0fbde3d8eb33da93ee4d4127"
+    },
+    {
+      "key": "github-release-body",
+      "value": "* fix `--cd` behavior when using resource globs ([#19](https://github.com/dpb587/gget/issues/19))\n\n**Assets (sha256)**\n\n    e7260a27dc5042de351b0ec33e69db0202727735328ddbccfb1c3616d500bb0e  gget-0.5.5-darwin-amd64\n    8ad077cd54cf4b075e8578f85cdf2650ae2f86cb2a852efbd98c6cb6733e78d8  gget-0.5.5-linux-amd64\n    a36ab492ab383d612f4983bdce162111bfef530f48438fb6b2649ea2fe18d806  gget-0.5.5-windows-amd64.exe"
+    },
+    {
+      "key": "github-release-id",
+      "value": "36910439"
+    },
+    {
+      "key": "github-release-published-at",
+      "value": "2021-01-26T12:25:25Z"
+    },
+    {
+      "key": "tag",
+      "value": "v0.5.5"
+    }
+  ],
+  "resources": [
+    {
+      "name": "gget-0.5.5-darwin-amd64",
+      "size": 7397360,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "e7260a27dc5042de351b0ec33e69db0202727735328ddbccfb1c3616d500bb0e"
+        }
+      ]
+    },
+    {
+      "name": "gget-0.5.5-linux-amd64",
+      "size": 6868992,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "8ad077cd54cf4b075e8578f85cdf2650ae2f86cb2a852efbd98c6cb6733e78d8"
+        }
+      ]
+    },
+    {
+      "name": "gget-0.5.5-windows-amd64.exe",
+      "size": 6949376,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "a36ab492ab383d612f4983bdce162111bfef530f48438fb6b2649ea2fe18d806"
+        }
+      ]
+    }
+  ]
+}
