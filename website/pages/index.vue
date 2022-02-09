@@ -608,7 +608,11 @@ export default {
 }
 
 pre {
-  @apply bg-teal-900 px-4 py-3 text-white overflow-auto;
+  @apply bg-teal-900 text-white overflow-x-auto;
+}
+
+pre code {
+  @apply inline-block mx-4 my-3;
 }
 
 pre code strong {
