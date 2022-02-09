@@ -428,7 +428,7 @@ fi</code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
             A <code>gget</code> Docker image is available and easily integrates as a build stage for downloads. It includes tools for decompressing archives, and the default working directory is <code>/result</code> for access in later stages.
           </p>
-          <pre class="my-3 -mx-4"><code>FROM dpb587/gget as gget
+          <pre class="my-3 -mx-4"><code>FROM ghcr.io/dpb587/gget/gget as gget
 RUN gget github.com/cloudfoundry/bosh-cli --ref-version=5.x \
       --executable bosh=bosh-cli-*-linux-amd64
 RUN gget github.com/cloudfoundry/bosh-bootloader \

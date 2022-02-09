@@ -106,12 +106,12 @@ jobs:
     - name: Publish Images
       run: |
         for tag in \
-          ${{ steps.prepare.outputs.version }} \
-          $( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1-2 ) \
-          $( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1 ) \
+          v${{ steps.prepare.outputs.version }} \
+          v$( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1-2 ) \
+          v$( echo "${{ steps.prepare.outputs.version }}" | cut -d. -f1 ) \
           latest \
         ; do
-          fqimagetag="${{ steps.prepare.outputs.image }}:v$tag"
+          fqimagetag="${{ steps.prepare.outputs.image }}:$tag"
           docker tag image $fqimagetag
           docker push $fqimagetag
         done
