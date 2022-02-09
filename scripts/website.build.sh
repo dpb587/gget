@@ -13,6 +13,7 @@ rm website/static/gget
 
 cd website/
 
+npm ci
 yarn build
 yarn start &
 nuxt=$!
