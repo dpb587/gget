@@ -46,7 +46,7 @@ func BuildTransfer(ctx context.Context, origin transfer.DownloadAsset, targetPat
 		}
 
 		if opts.ChecksumVerification.Required && len(csl) == 0 {
-			return nil, fmt.Errorf("acceptable checksum required but not found: %s", opts.ChecksumVerification.Acceptable.Join(", "))
+			return nil, fmt.Errorf("checksum required but not found: %s", opts.ChecksumVerification.Acceptable.Join(", "))
 		}
 
 		for _, cs := range csl {

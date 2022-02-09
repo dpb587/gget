@@ -260,7 +260,7 @@
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span><strong>export GITLAB_TOKEN=</strong>a1b2c3d4...
 <span class="cmd-prompt">$ </span>gget <strong>--service=gitlab</strong> gitlab.acme.corp/my-team/product '*-linux-amd64'
 <div class="cmd-result">Found 1 file from gitlab.acme.corp/my-team/product@v8.21.2
-√ product-8.21.2-darwin-amd64 done</div></code></pre>
+√ product-8.21.2-linux-amd64 done</div></code></pre>
         </div>
 
         <div class="px-4 mt-12 md:mt-16">
@@ -342,13 +342,13 @@ gget-{{latest.origin.ref}}.zip</div></code></pre>
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>/tmp/gget=</strong>'*linux*'
 <div class="cmd-result">Found 1 file (11.7M) from github.com/dpb587/gget@{{latest.origin.ref}}
-√ gget-0.4.0-linux-amd64 done (sha256 OK)</div></code></pre>
+√ gget-{{latestOriginRefSemver}}-linux-amd64 done (sha256 OK)</div></code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
             To automatically mark a resource (such as a binary) as executable, use the <strong><code>--executable</code></strong> option.
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget github.com/dpb587/gget <strong>--executable</strong> '*linux*'
 <div class="cmd-result">Found 1 file (11.7M) from github.com/dpb587/gget@{{latest.origin.ref}}
-√ gget-0.4.0-linux-amd64 done (sha256 OK; executable)</div></code></pre>
+√ gget-{{latestOriginRefSemver}}-linux-amd64 done (sha256 OK; executable)</div></code></pre>
           <p class="mt-3 text-lg leading-7 text-gray-800">
             When working with archive resources, you may want to use the <strong><code>--stdout</code></strong> option. This causes all downloaded contents to be streamed to <code>STDOUT</code> for redirects or chained commands.
           </p>
@@ -368,7 +368,7 @@ dpb587-gget-{{latest.metadata.filter((v) => v.key == 'commit')[0].value.substr(0
           </p>
           <pre class="my-3 -mx-4"><code><span class="cmd-prompt">$ </span>gget <strong>--verify-checksum=sha512-min</strong> github.com/dpb587/gget
 <div class="cmd-result">Found 1 file (11.7M) from github.com/dpb587/gget@{{latest.origin.ref}} '*linux*'
-gget: error: preparing transfer of gget-0.4.0-linux-amd64: acceptable checksum required but not found: sha512</div></code></pre>
+gget: error: preparing transfer of gget-{{latestOriginRefSemver}}-linux-amd64: checksum required but not found: sha512</div></code></pre>
         </div>
 
         <div class="px-4 mt-12 md:mt-16">
@@ -426,7 +426,7 @@ fi</code></pre>
         </div>
         <div class="px-4 mt-8">
           <p class="mt-3 text-lg leading-7 text-gray-800">
-            A <code>gget</code> Docker image is available and easily integrates as a build stage for downloads. It includes tools for uncompressing archives, and the default working directory is <code>/result</code> for access in later stages.
+            A <code>gget</code> Docker image is available and easily integrates as a build stage for downloads. It includes tools for decompressing archives, and the default working directory is <code>/result</code> for access in later stages.
           </p>
           <pre class="my-3 -mx-4"><code>FROM dpb587/gget as gget
 RUN gget github.com/cloudfoundry/bosh-cli --ref-version=5.x \
