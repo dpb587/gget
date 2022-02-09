@@ -91,7 +91,7 @@ rm *
 ../gget gitlab.com/gitlab-org/gitlab-runner --ref-version=11.x 'gitlab-runner_amd64.deb'
 
 diff <( shasum * ) - <<EOF
-8b5f4e982e692331571fc9cdf055f9f73a74b09d  gitlab-runner_amd64.deb
+28eb34a2f5cd9108994edcda7940a7608c4dec36  gitlab-runner_amd64.deb
 EOF
 
 rm *

@@ -57,7 +57,7 @@ func (r *Resource) GetChecksums(ctx context.Context, algos checksum.AlgorithmLis
 }
 
 func (r *Resource) Open(ctx context.Context) (io.ReadCloser, error) {
-	remoteHandle, redirectURL, err := r.client.Repositories.DownloadReleaseAsset(ctx, r.releaseOwner, r.releaseRepository, r.asset.GetID())
+	remoteHandle, redirectURL, err := r.client.Repositories.DownloadReleaseAsset(ctx, r.releaseOwner, r.releaseRepository, r.asset.GetID(), nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting asset")
 	}
