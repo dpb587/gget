@@ -1,0 +1,35 @@
+Usage:
+  gget HOST/OWNER/REPOSITORY[@REF] [[LOCAL-PATH=]RESOURCE-GLOB...]
+
+Runtime Options:
+  -h, --help                              show documentation of this command
+  -q, --quiet                             suppress runtime status messages
+  -v, --verbose                           increase logging verbosity (multiple)
+      --version=[CONSTRAINT]              show version of this command (with optional constraint to validate)
+
+Repository Options:
+      --ref-stability=STABILITY           acceptable stability level(s) for latest (values: stable, pre-release, any; default: stable)
+      --ref-version=CONSTRAINT            version constraint(s) to require of latest (e.g. 4.x)
+      --service=NAME                      specific git service to use (values: github, gitlab; default: auto-detect)
+
+Resource Options:
+      --exclude=RESOURCE-GLOB             exclude resource(s) from download (multiple)
+      --ignore-missing=[RESOURCE-GLOB]    if a resource is not found, skip it rather than failing (multiple)
+      --type=TYPE                         type of resource to get (values: asset, archive, blob; default: asset)
+      --list                              list matching resources and stop before downloading
+
+Download Options:
+      --cd=DIR                            change to directory before writing files
+      --executable=[RESOURCE-GLOB]        apply executable permissions to downloads (multiple)
+      --export=FORMAT                     export details about the download profile (values: json, jsonpath=TEMPLATE, plain, yaml)
+      --fail-fast                         fail and exit immediately if a download fails
+      --no-download                       do not perform any downloads
+      --no-progress                       do not show live-updating progress during downloads
+      --parallel=NUM                      maximum number of parallel downloads (default: 3)
+      --stdout                            write file contents to stdout rather than disk
+      --verify-checksum=[METHOD]          strategy for verifying checksums (values: auto, required, none, {algo}, {algo}-min; default: auto)
+
+Arguments:
+  HOST/OWNER/REPOSITORY[@REF]:            repository reference
+  [LOCAL-PATH=]RESOURCE-GLOB:             resource name(s) to download
+

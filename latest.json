@@ -1,0 +1,64 @@
+{
+  "origin": {
+    "string": "github.com/dpb587/gget@v0.6.1",
+    "service": "github",
+    "server": "github.com",
+    "owner": "dpb587",
+    "repository": "gget",
+    "ref": "v0.6.1"
+  },
+  "metadata": [
+    {
+      "key": "commit",
+      "value": "10b18ba1a7674a67b84b21e00199d85c234ae708"
+    },
+    {
+      "key": "github-release-body",
+      "value": "* fix automated Docker build tagging\n\n**Assets (sha256)**\n\n    e49f78d62cbd39e8f5636313b5b056c967161df4d1cc60e1cc874ee89501d6e8  gget-0.6.1-darwin-amd64\n    3e0e14525445e71886e631f62457c2f731b9b127695402bd0a98a9030739451d  gget-0.6.1-linux-amd64\n    85e995fbcc20af5e40d0638e3b3a8c500527da939a855520277a0cc6dacbf40a  gget-0.6.1-windows-amd64.exe"
+    },
+    {
+      "key": "github-release-id",
+      "value": "59170044"
+    },
+    {
+      "key": "github-release-published-at",
+      "value": "2022-02-09T20:16:15Z"
+    },
+    {
+      "key": "tag",
+      "value": "v0.6.1"
+    }
+  ],
+  "resources": [
+    {
+      "name": "gget-0.6.1-darwin-amd64",
+      "size": 6845728,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "e49f78d62cbd39e8f5636313b5b056c967161df4d1cc60e1cc874ee89501d6e8"
+        }
+      ]
+    },
+    {
+      "name": "gget-0.6.1-linux-amd64",
+      "size": 6438912,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "3e0e14525445e71886e631f62457c2f731b9b127695402bd0a98a9030739451d"
+        }
+      ]
+    },
+    {
+      "name": "gget-0.6.1-windows-amd64.exe",
+      "size": 6589952,
+      "checksums": [
+        {
+          "algo": "sha256",
+          "data": "85e995fbcc20af5e40d0638e3b3a8c500527da939a855520277a0cc6dacbf40a"
+        }
+      ]
+    }
+  ]
+}
